@@ -2,6 +2,7 @@ import re
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Count, Min, Max
+from .models import Issue, RecurringPattern, IssueType
 
 from .models import IssueReport, RecurringPattern, IssueType
 
@@ -18,12 +19,16 @@ def make_pattern_key(issue_type: str, location: str, title_norm: str) -> str:
 
 # issues/services.py
 
-def detect_recurring_patterns(data):
+def get_recurring_patterns(threshold=2):
     """
-    Temporary stub for User Story 11.
-    Will be expanded later.
+    Identifies patterns that occur more than 'threshold' times.
     """
-    return {
-        "patterns": [],
-        "message": "No recurring patterns detected"
-    }
+    # Group by issue_type and count them
+    recurring_issues = (
+        Fault.objects.values('issue_type')
+        .annotate(count=Count('id'))
+        .filter(count__gte=threshold)
+        .order_by('-count')
+    )
+    
+    return recurring_issues
