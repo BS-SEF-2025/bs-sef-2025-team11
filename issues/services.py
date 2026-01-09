@@ -1,34 +1,31 @@
-import re
-from datetime import timedelta
-from django.utils import timezone
-from django.db.models import Count, Min, Max
-from .models import Issue, RecurringPattern, IssueType
+from django.utils.timezone import now, timedelta
+from django.db.models import Count, Avg
 
-from .models import IssueReport, RecurringPattern, IssueType
+from .models import Issue
+from infrastructure.models import OverloadRecord
 
 
-def normalize_title(title: str) -> str:
-    t = (title or "").strip().lower()
-    t = re.sub(r"\s+", " ", t)
-    t = re.sub(r"[^a-z0-9\s\-\_]", "", t)
-    return t[:160] if t else "untitled"
+def detect_recurring_faults(minutes=60, threshold=3):
+    since = now() - timedelta(minutes=minutes)
 
-
-def make_pattern_key(issue_type: str, location: str, title_norm: str) -> str:
-    return f"{issue_type}:{(location or '').strip().lower()}:{title_norm}"
-
-# issues/services.py
-
-def get_recurring_patterns(threshold=2):
-    """
-    Identifies patterns that occur more than 'threshold' times.
-    """
-    # Group by issue_type and count them
-    recurring_issues = (
-        Fault.objects.values('issue_type')
-        .annotate(count=Count('id'))
+    return (
+        Issue.objects
+        .filter(timestamp__gte=since)
+        .values("error_code", "component")
+        .annotate(count=Count("id"))
         .filter(count__gte=threshold)
-        .order_by('-count')
+        .order_by("-count")
     )
-    
-    return recurring_issues
+
+
+def detect_recurring_overload(cpu_threshold=80, minutes=60):
+    since = now() - timedelta(minutes=minutes)
+
+    return (
+        OverloadRecord.objects
+        .filter(timestamp__gte=since)
+        .values("component")
+        .annotate(avg_cpu=Avg("cpu"))
+        .filter(avg_cpu__gte=cpu_threshold)
+        .order_by("-avg_cpu")
+    )
