@@ -1,45 +1,43 @@
+# 🏛️ Campus Infrastructure Hub (CIH)
+> **מערכת חכמה לניהול וניטור משאבי קמפוס בזמן אמת**
+
+[![Python](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/Django-5.0+-green.svg)](https://www.djangoproject.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://reactjs.org/)
+
+מערכת ה-CIH נועדה לשפר את חווית הסטודנט בקמפוס על ידי הנגשת נתונים חיים על עומסים בתשתיות השונות (ספריות, מעבדות, קפיטריות).
+
+---
+
+## 🎯 User Story #1: ניטור עומס ספריות (סטטוס: ✅ הושלם)
+
+**הצורך:** סטודנטים מבזבזים זמן בהגעה לספרייה רק כדי לגלות שאין מקום פנוי.  
+**הפתרון:** דשבורד דינמי המציג רמת עומס והמלצה אוטומטית.
+
+### 🛠️ יכולות המערכת ב-US1:
+* **API חכם:** חישוב אחוזי תפוסה בזמן אמת ב-Backend.
+* **מנגנון המלצות:** אלגוריתם המייצר הודעה (Safe/Busy) על בסיס נתוני עומס.
+* **UI דינמי:** שינוי צבעי ממשק (ירוק 🟢, כתום 🟠, אדום 🔴) בהתאם למצב התפוסה.
+* **Live Updates:** סנכרון אוטומטי מול בסיס הנתונים ללא צורך ברענון דף (כל 5 שניות).
+
+---
+
+## 🏗️ ארכיטקטורת המערכת
 
 
-# 🧪 User Story 2: Lab Availability & Room Management
 
-## 📌 Project Overview
+### רכיבים מרכזיים:
+1.  **Frontend (React):** משתמש ב-Axios לצריכת הנתונים וניהול State של רמת העומס.
+2.  **Backend (Django):** מספק נקודת קצה (Endpoint) ב-JSON הכוללת חישובים לוגיים.
+3.  **Admin Panel:** ממשק ניהול מאובטח המאפשר למנהלי תשתיות לעדכן נתונים בשטח.
 
-This module is the core of the Campus Infrastructure Hub. It allows students and faculty members to view real-time availability of computer labs and study rooms, preventing overcrowding and optimizing campus resources.
+---
 
-## 🎯 User Story Definition
+## 💻 התקנה והרצה
 
-> **"As a Student/Staff member, I want to see which labs are currently available and their occupancy status, so I can plan my study sessions effectively."**
-
-## ✨ Key Features
-
-* **Live Occupancy Tracking:** Visual indicators (Green/Red) for lab availability.
-* **Detailed Lab Info:** Displays capacity, current number of students, and available software/hardware.
-* **Dynamic Filtering:** Filter labs by building, floor, or equipment (e.g., "Labs with GPU").
-* **Integration with Maintenance:** Automatically marks labs as "Unavailable" if a critical issue is reported via US7.
-
-## 🛠️ Technical Architecture
-
-### **Backend (Django)**
-
-We implemented a robust data model in the `room_requests` and `infrastructure` apps:
-
-* **Model `Lab**`: Stores capacity, location, and status.
-* **API View**: High-performance endpoints using Django REST Framework to serve lab data to the frontend.
-
-### **Frontend (React)**
-
-* **Component-Based UI:** Modular React components for lab cards and status badges.
-* **State Management:** Real-time updates using Axios and React Hooks (`useState`, `useEffect`).
-* **Responsive Design:** Fully compatible with mobile and desktop views.
-
-## 🧪 Testing & QA
-
-Following the course requirements, we implemented:
-
-1. **Unit Tests:** Testing the Lab model and API response logic.
-2. **Integration Tests:** Verifying that lab data is correctly fetched and displayed in the frontend.
-
-## 🔄 Git & Workflow
-
-* **Branch:** `feature/US2-lab-availability`
-* **Integration:** Successfully merged with `main` and synchronized with US5 (Alerts) and US7 (Maintenance).
+### שלב 1: Backend
+```bash
+cd BACKEND
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
