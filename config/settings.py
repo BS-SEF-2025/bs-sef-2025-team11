@@ -30,6 +30,8 @@ INSTALLED_APPS = [
     "infrastructure.apps.InfrastructureConfig",
     "accounts.apps.AccountsConfig",
     "room_requests",
+    'corsheaders',  # <--- תוסיף את זה כאן
+    'rest_framework',
 
 ]
 
@@ -41,6 +43,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # <--- תוסיף את זה בדיוק כאן!
 ]
 
 ROOT_URLCONF = 'config.urls'
