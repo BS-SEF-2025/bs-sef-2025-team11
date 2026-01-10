@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+
+.venv/
+db.sqlite3
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtualenv
+.venv/
+venv/
+
+# Local DB
+db.sqlite3

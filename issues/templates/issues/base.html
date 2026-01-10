@@ -1,0 +1,83 @@
+
+
+<div style="max-width: 1100px; margin: 20px auto; padding: 10px;">
+  <h1>Recurring Issues Report</h1>
+
+  <form method="get" style="display:flex; gap:12px; flex-wrap:wrap; margin: 12px 0;">
+    <label>
+      Minutes window:
+      <input type="number" name="minutes" value="{{ minutes }}" min="1" style="width:120px;">
+    </label>
+
+    <label>
+      Fault threshold:
+      <input type="number" name="fault_threshold" value="{{ fault_threshold }}" min="1" style="width:120px;">
+    </label>
+
+    <label>
+      CPU threshold:
+      <input type="number" name="cpu_threshold" value="{{ cpu_threshold }}" min="1" step="0.1" style="width:120px;">
+    </label>
+
+    <button type="submit">Refresh</button>
+  </form>
+
+  <hr>
+
+  <h2>Recurring Faults</h2>
+  {% if faults %}
+    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th>Error Code</th>
+          <th>Component</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in faults %}
+          <tr>
+            <td>{{ f.error_code }}</td>
+            <td>{{ f.component }}</td>
+            <td>{{ f.count }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No recurring faults detected for the selected window/threshold.</p>
+  {% endif %}
+
+  <br>
+
+  <h2>Recurring Overloads</h2>
+  {% if overloads %}
+    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Average CPU</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in overloads %}
+          <tr>
+            <td>{{ o.component }}</td>
+            <td>{{ o.avg_cpu|floatformat:1 }}%</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No recurring overloads detected for the selected window/threshold.</p>
+  {% endif %}
+
+  <hr>
+
+  <p>
+    API links:
+    <a href="/api/issues/recurring-faults/" target="_blank">Recurring Faults API</a> |
+    <a href="/api/issues/recurring-overloads/" target="_blank">Recurring Overloads API</a>
+  </p>
+</div>
+
