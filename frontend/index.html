@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Report Classroom Fault</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Report Classroom Fault</h1>
+        <form id="fault-form">
+            <label for="fault-space">Select Space:</label>
+            <select id="fault-space" required></select>
+
+            <label for="fault-category">Category:</label>
+            <input type="text" id="fault-category" placeholder="Category" required>
+
+            <label for="fault-description">Description:</label>
+            <textarea id="fault-description" placeholder="Describe the fault" required></textarea>
+
+            <label for="fault-severity">Severity:</label>
+            <select id="fault-severity" required>
+                <option value="low">Low</option>
+                <option value="medium" selected>Medium</option>
+                <option value="high">High</option>
+            </select>
+
+            <button type="submit">Submit Report</button>
+        </form>
+        <div id="confirmation"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
