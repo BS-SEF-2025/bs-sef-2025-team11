@@ -1,0 +1,32 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Login{% endblock %}
+{% block page_title %}Login{% endblock %}
+{% block page_subtitle %}Sign in to access campus services{% endblock %}
+
+{% block content %}
+  {% if form.errors %}
+    <div class="alert">Invalid username or password. Please try again.</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="grid">
+      <div class="field">
+        <label>Username</label>
+        <input class="input" type="text" name="username" required>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input class="input" type="password" name="password" required>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Login</button>
+    </div>
+  </form>
+{% endblock %}
+
