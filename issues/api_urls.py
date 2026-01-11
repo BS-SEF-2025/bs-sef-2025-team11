@@ -1,7 +1,7 @@
 from django.urls import path
-from .api_views import RecurringFaultsAPIView, RecurringOverloadAPIView
+from . import api_views
 
 urlpatterns = [
-    path("recurring-faults/", RecurringFaultsAPIView.as_view(), name="recurring-faults"),
-    path("recurring-overloads/", RecurringOverloadAPIView.as_view(), name="recurring-overloads"),
+    path("recurring-faults/", api_views.recurring_faults, name="recurring_faults"),
+    path("recurring-overloads/", api_views.recurring_overloads, name="recurring_overloads"),
 ]

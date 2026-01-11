@@ -1,83 +1,185 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Issues{% endblock %}</title>
 
+  <style>
+    :root{
+      --bg1:#6d28d9;   /* purple */
+      --bg2:#8b5cf6;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e2e8f0;
+      --shadow:0 20px 60px rgba(0,0,0,.18);
+      --radius:18px;
+    }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background: radial-gradient(1200px 700px at 50% 30%, var(--bg2), var(--bg1));
+      min-height:100vh;
+    }
+    .page{
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:48px 16px;
+    }
+    .container{
+      width:min(1050px, 100%);
+    }
+    .hero{
+      text-align:center;
+      color:#fff;
+      margin-bottom:18px;
+    }
+    .hero h1{
+      font-size:48px;
+      line-height:1.1;
+      margin:0 0 10px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .hero p{
+      margin:0;
+      opacity:.9;
+      font-size:16px;
+    }
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:22px;
+    }
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:14px;
+    }
+    .link{
+      color: #6d28d9;
+      text-decoration:none;
+      font-weight:700;
+    }
+    .link:hover{ text-decoration:underline; }
 
-<div style="max-width: 1100px; margin: 20px auto; padding: 10px;">
-  <h1>Recurring Issues Report</h1>
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap:12px;
+      align-items:end;
+      margin:14px 0 6px;
+    }
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+      font-weight:700;
+    }
+    input{
+      width:100%;
+      height:44px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:0 12px;
+      outline:none;
+      font-size:14px;
+      background:#fff;
+    }
+    input:focus{ border-color:#a78bfa; box-shadow:0 0 0 4px rgba(167,139,250,.25); }
+    .btn{
+      height:44px;
+      border:none;
+      border-radius:12px;
+      padding:0 18px;
+      background:#6d28d9;
+      color:#fff;
+      font-weight:800;
+      cursor:pointer;
+      width:100%;
+    }
+    .btn:hover{ filter:brightness(1.03); }
 
-  <form method="get" style="display:flex; gap:12px; flex-wrap:wrap; margin: 12px 0;">
-    <label>
-      Minutes window:
-      <input type="number" name="minutes" value="{{ minutes }}" min="1" style="width:120px;">
-    </label>
+    .section{
+      margin-top:18px;
+      border-top:1px solid var(--border);
+      padding-top:16px;
+    }
+    .section h2{
+      margin:0 0 10px;
+      font-size:20px;
+      font-weight:900;
+    }
+    .empty{
+      color:var(--muted);
+      background:#f8fafc;
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      font-size:14px;
+    }
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      overflow:hidden;
+      border:1px solid var(--border);
+      border-radius:12px;
+      font-size:14px;
+    }
+    th, td{
+      padding:10px 12px;
+      border-bottom:1px solid var(--border);
+      text-align:left;
+      vertical-align:top;
+    }
+    th{
+      background:#f8fafc;
+      font-size:12px;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+      color:var(--muted);
+      font-weight:900;
+    }
+    tr:last-child td{ border-bottom:none; }
 
-    <label>
-      Fault threshold:
-      <input type="number" name="fault_threshold" value="{{ fault_threshold }}" min="1" style="width:120px;">
-    </label>
+    .api{
+      margin-top:14px;
+      font-size:13px;
+      color:var(--muted);
+    }
+    .api a{ color:#6d28d9; font-weight:800; text-decoration:none; }
+    .api a:hover{ text-decoration:underline; }
 
-    <label>
-      CPU threshold:
-      <input type="number" name="cpu_threshold" value="{{ cpu_threshold }}" min="1" step="0.1" style="width:120px;">
-    </label>
+    @media (max-width: 900px){
+      .hero h1{ font-size:38px; }
+      .grid{ grid-template-columns: 1fr; }
+      .btn{ width:100%; }
+    }
+  </style>
 
-    <button type="submit">Refresh</button>
-  </form>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="page">
+    <div class="container">
+      <div class="hero">
+        <h1>{% block hero_title %}Dashboard{% endblock %}</h1>
+        <p>{% block hero_subtitle %}{% endblock %}</p>
+      </div>
 
-  <hr>
-
-  <h2>Recurring Faults</h2>
-  {% if faults %}
-    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
-      <thead>
-        <tr>
-          <th>Error Code</th>
-          <th>Component</th>
-          <th>Count</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for f in faults %}
-          <tr>
-            <td>{{ f.error_code }}</td>
-            <td>{{ f.component }}</td>
-            <td>{{ f.count }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>No recurring faults detected for the selected window/threshold.</p>
-  {% endif %}
-
-  <br>
-
-  <h2>Recurring Overloads</h2>
-  {% if overloads %}
-    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse;">
-      <thead>
-        <tr>
-          <th>Component</th>
-          <th>Average CPU</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for o in overloads %}
-          <tr>
-            <td>{{ o.component }}</td>
-            <td>{{ o.avg_cpu|floatformat:1 }}%</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>No recurring overloads detected for the selected window/threshold.</p>
-  {% endif %}
-
-  <hr>
-
-  <p>
-    API links:
-    <a href="/api/issues/recurring-faults/" target="_blank">Recurring Faults API</a> |
-    <a href="/api/issues/recurring-overloads/" target="_blank">Recurring Overloads API</a>
-  </p>
-</div>
-
+      <div class="card">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

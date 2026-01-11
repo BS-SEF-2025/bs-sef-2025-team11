@@ -1,6 +1,12 @@
-from django.urls import path
-from .views import login_view
+from django.contrib import admin
+from django.urls import path, include
 
 urlpatterns = [
-    path("login/", login_view, name="login"),
+    path("admin/", admin.site.urls),
+
+    # HTML pages
+    path("issues/", include("issues.urls")),
+
+    # API endpoints
+    path("api/issues/", include("issues.api_urls")),
 ]

@@ -3,10 +3,7 @@ from django.urls import path, include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
-    # Frontend pages
-    path("issues/", include("issues.urls")),
-
-    # API
     path("api/issues/", include("issues.api_urls")),
+    # and if you have html pages:
+    path("issues/", include("issues.urls")),
 ]

@@ -1,37 +1,12 @@
 from rest_framework import serializers
-from .models import IssueReport, RecurringPattern
+from .models import Fault, Overload
 
-
-class IssueReportSerializer(serializers.ModelSerializer):
+class FaultSerializer(serializers.ModelSerializer):
     class Meta:
-        model = IssueReport
-        fields = [
-            "id",
-            "issue_type",
-            "location",
-            "title",
-            "description",
-            "severity",
-            "reported_by",
-            "created_at",
-        ]
-        read_only_fields = ["id", "reported_by", "created_at"]
+        model = Fault
+        fields = "__all__"
 
-
-class RecurringPatternSerializer(serializers.ModelSerializer):
+class OverloadSerializer(serializers.ModelSerializer):
     class Meta:
-        model = RecurringPattern
-        fields = [
-            "id",
-            "issue_type",
-            "pattern_key",
-            "location",
-            "title_norm",
-            "window_days",
-            "threshold",
-            "count_in_window",
-            "first_seen",
-            "last_seen",
-            "last_computed_at",
-        ]
-        read_only_fields = fields
+        model = Overload
+        fields = "__all__"

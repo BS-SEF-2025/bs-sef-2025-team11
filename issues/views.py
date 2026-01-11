@@ -1,15 +1,17 @@
 from django.shortcuts import render
-from .services import detect_recurring_faults, detect_recurring_overload
+from django.views.decorators.http import require_GET
+
+from .utils import detect_recurring_faults, detect_recurring_overloads
 
 
+@require_GET
 def recurring_report(request):
-    # Optional query params to control thresholds from UI
     minutes = int(request.GET.get("minutes", 60))
     fault_threshold = int(request.GET.get("fault_threshold", 3))
-    cpu_threshold = float(request.GET.get("cpu_threshold", 80))
+    cpu_threshold = float(request.GET.get("cpu_threshold", 80.0))
 
-    faults = list(detect_recurring_faults(minutes=minutes, threshold=fault_threshold))
-    overloads = list(detect_recurring_overload(minutes=minutes, cpu_threshold=cpu_threshold))
+    faults = detect_recurring_faults(minutes_window=minutes, threshold=fault_threshold)
+    overloads = detect_recurring_overloads(minutes_window=minutes, cpu_threshold=cpu_threshold)
 
     context = {
         "minutes": minutes,
@@ -18,4 +20,4 @@ def recurring_report(request):
         "faults": faults,
         "overloads": overloads,
     }
-    return render(request, "issues/base.html", context)
+    return render(request, "issues/recurring_report.html", context)

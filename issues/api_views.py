@@ -1,20 +1,17 @@
-from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from .services import detect_recurring_faults, detect_recurring_overload
+from .models import Fault, Overload
+from .serializers import FaultSerializer, OverloadSerializer
 
 
-class RecurringFaultsAPIView(APIView):
-    def get(self, request):
-        minutes = int(request.GET.get("minutes", 60))
-        threshold = int(request.GET.get("threshold", 3))
-        data = list(detect_recurring_faults(minutes=minutes, threshold=threshold))
-        return Response(data)
+@api_view(["GET"])
+def recurring_faults(request):
+    qs = Fault.objects.all().order_by("-timestamp")
+    return Response(FaultSerializer(qs, many=True).data)
 
 
-class RecurringOverloadAPIView(APIView):
-    def get(self, request):
-        minutes = int(request.GET.get("minutes", 60))
-        cpu_threshold = float(request.GET.get("cpu_threshold", 80))
-        data = list(detect_recurring_overload(minutes=minutes, cpu_threshold=cpu_threshold))
-        return Response(data)
+@api_view(["GET"])
+def recurring_overloads(request):
+    qs = Overload.objects.all().order_by("-timestamp")
+    return Response(OverloadSerializer(qs, many=True).data)
