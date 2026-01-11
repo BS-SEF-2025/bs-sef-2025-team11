@@ -1,0 +1,36 @@
+{% extends "room_requests/base.html" %}
+
+{% block title %}Library Occupancy{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="title">Library Occupancy</div>
+      <div class="muted">Current library load to help students decide when to visit.</div>
+    </div>
+  </div>
+
+  {% if latest %}
+    <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+      <div style="font-size:52px; font-weight:900; line-height:1;">
+        {{ latest.occupancy_percent }}%
+      </div>
+
+      <div class="muted">
+        <div><b>Source:</b> {{ latest.source }}</div>
+        <div><b>Captured:</b> {{ latest.captured_at|date:"Y-m-d H:i" }}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div style="height:14px; border:1px solid var(--border); border-radius:999px; overflow:hidden;">
+        <div style="height:100%; width:{{ latest.occupancy_percent }}%; background:linear-gradient(90deg,#22c55e,#f59e0b,#ef4444);"></div>
+      </div>
+      <div class="help" style="margin-top:10px;">0% = empty, 100% = full</div>
+    </div>
+  {% else %}
+    <div class="msg msg-error">No occupancy data available yet.</div>
+  {% endif %}
+</div>
+{% endblock %}

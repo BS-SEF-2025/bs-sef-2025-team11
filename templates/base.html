@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Campus Infrastructure{% endblock %}</title>
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --border:#e5e7eb;
+      --shadow:0 10px 30px rgba(2,6,23,.08);
+      --radius:14px;
+      --barbg:#eef2ff;
+      --green:#16a34a;
+      --yellow:#ca8a04;
+      --red:#dc2626;
+      --blue:#2563eb;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .page{
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:48px 16px;
+    }
+
+    .card{
+      width: min(820px, 100%);
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:28px;
+    }
+
+    .header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .title{font-size:22px;font-weight:800; line-height:1.1;}
+    .subtitle{color:var(--muted); margin-top:6px;}
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:13px;
+      border:1px solid var(--border);
+      background:#f8fafc;
+      color:var(--text);
+      white-space:nowrap;
+    }
+
+    .row{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:22px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    .big{
+      font-size:64px;
+      font-weight:900;
+      letter-spacing:-1px;
+    }
+
+    .meta{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.5;
+      margin-top:8px;
+    }
+
+    .barwrap{
+      margin-top:18px;
+      border:1px solid var(--border);
+      background:var(--barbg);
+      border-radius:999px;
+      height:14px;
+      overflow:hidden;
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background:var(--blue);
+    }
+
+    .legend{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:10px;
+    }
+
+    .footer{
+      margin-top:18px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+      color:var(--muted);
+      font-size:13px;
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>
