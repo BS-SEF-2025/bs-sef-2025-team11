@@ -1,0 +1,9 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Infrastructure</title></head>
+<body>
+  <h1>Infrastructure Dashboard</h1>
+  <p>Welcome, {{ request.user.username }}</p>
+  <a href="{% url 'logout' %}">Logout</a>
+</body>
+</html>
