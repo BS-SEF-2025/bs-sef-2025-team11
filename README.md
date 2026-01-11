@@ -1,153 +1,71 @@
-﻿# bs-sef-2025-team11
+# US-11 — Recurring Issues Monitoring (Faults & Overloads)
 
-US11 – Recurring Issues Detection (Faults + Overloads) and Reporting UI
+## Overview
+US-11 adds the capability to record and track recurring system issues in the application.  
+The goal is to persist operational problems (e.g., faults and overload conditions) so they can be audited, monitored, and analyzed over time.
 
-Goal: Detect repeating problems in the system over a time window and expose them via APIs + a simple report page for viewing results.
+This implementation introduces dedicated models for:
+- **Fault**: a structured system error (error code + description + timestamp)
+- **Overload**: high resource usage events (CPU/RAM or component usage)
 
-Step 1 — Define the Data Models (Persistence Layer)
-US11.1 — Fault Logging Model (Issues domain)
+US-11 ensures the issues are stored in the database and can be retrieved later (e.g., via admin, API, or HTML pages depending on your project scope).
 
-Implemented a Fault entity (error_code, description, component, timestamp).
+---
 
-Purpose: store system faults so we can analyze recurrence over time.
+## Functional Scope
+US-11 covers:
+- Database persistence for recurring issues (Fault / Overload)
+- Automatic timestamping for event records
+- Migrations for the new schema
+- (Optional) Admin integration for viewing records
+- (Optional) API endpoints and/or HTML pages to list records
 
-US11.2 — Overload Logging Model (Infrastructure domain)
+---
 
-Implemented an OverloadRecord entity (component, cpu, memory, timestamp).
+## Architecture & Data Flow
 
-Purpose: store resource overload events (CPU/RAM) for recurrence detection.
+### What problem does this solve?
+Recurring issues are operational events. Without persistence, they are lost after restart.  
+US-11 stores them permanently in the DB so the team can:
+- Investigate when an issue happened
+- See repeated patterns (same error code, same component)
+- Provide evidence in reports and demos
 
-Result: We now have two persistent sources of truth:
+### Data flow (high level)
+1. An issue event occurs (fault or overload)
+2. The application creates a record (Fault / Overload)
+3. Django ORM persists the record to the database
+4. Records can be viewed later (admin/API/UI)
 
-issues_fault (fault events)
+---
 
-infrastructure_overloadrecord (overload events)
+## Database: Where is the data saved?
 
-Step 2 — Database Migrations (Schema Creation)
+### 1) Faults
+Stored in a table generated from the `Fault` model (commonly: `issues_fault`).
 
-Generated migrations for both apps (issues + infrastructure).
+Typical fields:
+- `id` (primary key)
+- `error_code` (string, e.g., `DB_CONNECTION_FAIL`)
+- `description` (text)
+- `timestamp` (auto-created DateTime)
 
-Applied migrations to create DB tables.
+**Key behavior:**  
+`timestamp` is stored automatically at creation using `auto_now_add=True`.  
+This guarantees each event has a reliable audit time.
 
-Verified tables exist in the SQLite database using Django migrations / introspection.
+### 2) Overloads
+Stored in a table generated from the `Overload` model (commonly: `issues_overload`).
 
-Result: No more “no such table …” errors once migrations are applied correctly.
+Typical fields depend on your model, but often include:
+- `component_name` (e.g., `DB`, `API`, `Worker`)
+- metrics like `cpu_percent`, `ram_percent`, or general usage fields
+- `timestamp` (auto-created)
 
-Step 3 — Implement the Detection Logic (Business/Service Layer)
-US11.1 Recurring Faults Detection
+### 3) Django Migrations
+US-11 schema is applied via migrations in:
+- `issues/migrations/`
 
-Created a service function that:
-
-filters Faults within a given minutes window
-
-groups by (error_code, component)
-
-counts occurrences
-
-returns only items meeting a threshold (e.g., 3+ occurrences)
-
-US11.2 Recurring Overloads Detection
-
-Created a service function that:
-
-filters OverloadRecord within minutes window
-
-groups by component
-
-calculates average CPU (and optionally memory)
-
-returns only components exceeding cpu_threshold (e.g., avg CPU >= 80)
-
-Result: Recurrence rules are centralized and reusable (not embedded inside views).
-
-Step 4 — Expose Results Through REST APIs (API Layer)
-US11.1 API: Recurring Faults
-
-Implemented an API endpoint:
-
-GET /api/issues/recurring-faults/
-
-Returns structured JSON list (e.g., error_code, component, count).
-
-Supports query params such as:
-
-minutes
-
-fault_threshold
-
-US11.2 API: Recurring Overloads
-
-Implemented an API endpoint:
-
-GET /api/issues/recurring-overloads/
-
-Returns structured JSON list (e.g., component, average_cpu).
-
-Supports query params such as:
-
-minutes
-
-cpu_threshold
-
-Result: The system supports programmatic access (frontend, monitoring tools, Postman).
-
-Step 5 — Add Frontend Report Page (UI Layer)
-US11.3 Web UI: Recurring Issues Report
-
-Implemented a server-rendered page:
-
-GET /issues/recurring-report/
-
-UI includes:
-
-filter form: minutes window + thresholds
-
-Recurring Faults table
-
-Recurring Overloads table
-
-links to the two API endpoints
-
-Result: Human-readable report for instructors / stakeholders without needing Postman.
-
-Step 6 — Routing and Integration (Wiring)
-
-Added URL routing for:
-
-issues page route: /issues/recurring-report/
-
-issues API routes: /api/issues/recurring-faults/, /api/issues/recurring-overloads/
-
-Ensured INSTALLED_APPS includes:
-
-issues
-
-infrastructure
-
-Result: Full end-to-end flow works (models → DB → services → APIs → UI).
-
-Step 7 — Validation / Testing (Proof it works)
-
-Seeded sample data through Django shell (Faults + OverloadRecord).
-
-Confirmed:
-
-APIs return HTTP 200 OK and correct JSON
-
-report page renders and shows tables
-
-filters update results correctly
-
-Confirmed no missing templates after moving templates into app-based folders:
-
-issues/templates/issues/...
-
-Final Deliverables for US11
-
-Fault recurrence detection + API
-
-Overload recurrence detection + API
-
-Recurring report UI page (HTML tables + filters)
-
-Integration (urls, templates, migrations, installed apps)
+You should see applied migrations with:
+```powershell
+python manage.py showmigrations issues
