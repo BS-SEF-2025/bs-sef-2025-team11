@@ -1,8 +1,8 @@
 from django.urls import path
-from . import views
+from .views import library_occupancy_view
 
 app_name = "infrastructure"
 
 urlpatterns = [
-    path("library-occupancy/", views.library_occupancy_view, name="library_occupancy"),
+    path("library/", library_occupancy_view, name="library_occupancy"),
 ]

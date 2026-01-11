@@ -1,36 +1,53 @@
-{% extends "room_requests/base.html" %}
+{% extends "layout/base.html" %}
 
 {% block title %}Library Occupancy{% endblock %}
+{% block page_title %}Library Occupancy{% endblock %}
+{% block page_subtitle %}Check how busy the library is before you come{% endblock %}
 
 {% block content %}
-<div class="card">
-  <div class="card-header">
+  <div class="grid">
     <div>
-      <div class="title">Library Occupancy</div>
-      <div class="muted">Current library load to help students decide when to visit.</div>
+      <div class="field">
+        <label>Current occupancy</label>
+        <div class="input" style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:900;font-size:16px;">{{ current }}/{{ capacity }}</span>
+          <span style="font-weight:900;">{{ percent }}%</span>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        {% if level == "LOW" %}
+          <span class="badge badge-low">LOW</span>
+        {% elif level == "MEDIUM" %}
+          <span class="badge badge-mid">MEDIUM</span>
+        {% else %}
+          <span class="badge badge-high">HIGH</span>
+        {% endif %}
+      </div>
+
+      <div style="margin-top:16px;color:var(--muted);font-weight:700;">
+        {% if level == "LOW" %}
+          Plenty of space available.
+        {% elif level == "MEDIUM" %}
+          Moderate load. You can still find seats.
+        {% else %}
+          Very busy right now. Consider coming later.
+        {% endif %}
+      </div>
+    </div>
+
+    <div>
+      <div class="field">
+        <label>Occupancy visualization</label>
+        <div class="input" style="padding:16px;">
+          <div style="height:14px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden;">
+            <div style="height:100%;width:{{ percent }}%;background:linear-gradient(135deg,var(--primary),var(--primary2));"></div>
+          </div>
+          <div style="margin-top:10px;color:var(--muted);font-weight:700;">
+            Updated: {{ updated_at|default:"now" }}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
-  {% if latest %}
-    <div style="display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
-      <div style="font-size:52px; font-weight:900; line-height:1;">
-        {{ latest.occupancy_percent }}%
-      </div>
-
-      <div class="muted">
-        <div><b>Source:</b> {{ latest.source }}</div>
-        <div><b>Captured:</b> {{ latest.captured_at|date:"Y-m-d H:i" }}</div>
-      </div>
-    </div>
-
-    <div style="margin-top:14px;">
-      <div style="height:14px; border:1px solid var(--border); border-radius:999px; overflow:hidden;">
-        <div style="height:100%; width:{{ latest.occupancy_percent }}%; background:linear-gradient(90deg,#22c55e,#f59e0b,#ef4444);"></div>
-      </div>
-      <div class="help" style="margin-top:10px;">0% = empty, 100% = full</div>
-    </div>
-  {% else %}
-    <div class="msg msg-error">No occupancy data available yet.</div>
-  {% endif %}
-</div>
 {% endblock %}

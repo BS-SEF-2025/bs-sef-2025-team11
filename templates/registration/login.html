@@ -1,37 +1,32 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Login</title>
-  <style>
-    body{font-family:Arial;background:#f6f7fb;margin:0;padding:0}
-    .card{max-width:420px;margin:80px auto;background:#fff;border-radius:12px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
-    .title{font-size:22px;font-weight:700;margin-bottom:6px}
-    .muted{color:#667085;margin-bottom:18px}
-    label{display:block;font-size:14px;margin:12px 0 6px}
-    input{width:100%;padding:10px 12px;border:1px solid #d0d5dd;border-radius:10px;font-size:14px}
-    .btn{margin-top:16px;width:100%;padding:10px 12px;border:0;border-radius:10px;background:#111827;color:#fff;font-weight:600;cursor:pointer}
-    .err{background:#fff3f3;border:1px solid #ffcccc;color:#b42318;padding:10px 12px;border-radius:10px;margin:10px 0}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="title">Login</div>
-    <div class="muted">Use your campus account to continue.</div>
+{% extends "layout/base.html" %}
 
-    {% if form.errors %}
-      <div class="err">Invalid username or password.</div>
-    {% endif %}
+{% block title %}Login{% endblock %}
+{% block page_title %}Login{% endblock %}
+{% block page_subtitle %}Sign in to access campus services{% endblock %}
 
-    <form method="post">
-      {% csrf_token %}
-      <label for="id_username">Username</label>
-      {{ form.username }}
-      <label for="id_password">Password</label>
-      {{ form.password }}
-      <button class="btn" type="submit">Login</button>
-      <input type="hidden" name="next" value="{{ next }}">
-    </form>
-  </div>
-</body>
-</html>
+{% block content %}
+  {% if form.errors %}
+    <div class="alert">Invalid username or password. Please try again.</div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="grid">
+      <div class="field">
+        <label>Username</label>
+        <input class="input" type="text" name="username" required>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input class="input" type="password" name="password" required>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" type="submit">Login</button>
+    </div>
+  </form>
+{% endblock %}
+
