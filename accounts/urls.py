@@ -1,12 +1,12 @@
-from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
+from .views import login_view, logout_view, student_home, infra_home, lecturer_home
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("login/", login_view, name="login"),
+    path("logout/", logout_view, name="logout"),
 
-    # HTML pages
-    path("issues/", include("issues.urls")),
-
-    # API endpoints
-    path("api/issues/", include("issues.api_urls")),
+    # Role dashboards
+    path("student/", student_home, name="student_home"),
+    path("infrastructure/", infra_home, name="infra_home"),
+    path("lecturer/", lecturer_home, name="lecturer_home"),
 ]
