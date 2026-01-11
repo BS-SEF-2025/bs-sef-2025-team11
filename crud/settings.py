@@ -13,24 +13,26 @@ SECRET_KEY = 'django-insecure-mk^5!xl=$=@dz-oxsf=#4=z0v%m)z#bknd5gpbq*$3m_z2-u$b
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
-ALLOWED_HOSTS = []
-
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    # Django default apps...
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
 
     # Third-party
-    'rest_framework',
+    "rest_framework",
 
-    # Local
-    'accounts',
-    'issues',
+    # Local apps
+    "accounts",
+    "infrastructure.apps.InfrastructureConfig",
+    "issues.apps.IssuesConfig",
+    "room_requests",
 ]
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
