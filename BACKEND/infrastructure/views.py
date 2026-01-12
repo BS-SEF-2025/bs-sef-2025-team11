@@ -1,12 +1,18 @@
-from django.http import JsonResponse
-from .models import Lab, Alert
+from django.views.decorators.csrf import csrf_exempt
+import json
 
-def lab_list(request):
-    # מחזיר את רשימת המעבדות
-    labs = list(Lab.objects.all().values())
-    return JsonResponse(labs, safe=False)
+def get_all_issues(request):
+    # משיכת כל התקלות מהמסד
+    from .models import Issue
+    issues = list(Issue.objects.all().values('id', 'lab__name', 'description', 'reported_at', 'is_fixed'))
+    return JsonResponse(issues, safe=False)
 
-def get_alerts(request):
-    # מחזיר את ההתראות הפעילות
-    alerts = list(Alert.objects.filter(is_active=True).values())
-    return JsonResponse(alerts, safe=False)
+@csrf_exempt
+def update_issue_status(request, issue_id):
+    if request.method == 'POST':
+        from .models import Issue
+        issue = Issue.objects.get(id=issue_id)
+        # הפיכת הסטטוס (מתיקון ללא תוקן ולהיפך)
+        issue.is_fixed = not issue.is_fixed
+        issue.save()
+        return JsonResponse({'status': 'success', 'is_fixed': issue.is_fixed})
