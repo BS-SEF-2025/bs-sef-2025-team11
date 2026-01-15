@@ -1,219 +1,45 @@
-<<<<<<< HEAD
-🛠️ User Story 7 – Maintenance Dashboard
-📌 Overview
+# US-2: Find Available Lab
 
-User Story 7 introduces a Maintenance Staff Dashboard designed to give infrastructure and maintenance teams a clear, real-time overview of reported issues across the campus.
-The dashboard helps prioritize work, track issue status, and ensure faster resolution of faults in labs and facilities.
+This branch contains ONLY the implementation for **US-2: Find Available Lab**.
 
-🎯 Objectives
+Allows students to quickly locate free computer labs suitable for practice.
 
-Centralize all maintenance-related issues in one place
+## Files Included
 
-Provide real-time visibility into infrastructure problems
+### US-2 Specific Files
+- `src/pages/FindLabs.jsx` - Main page component for finding available labs
+- `src/components/cards/LabCard.jsx` - Lab display card component
 
-Enable quick decision-making and efficient maintenance workflows
+### Backend Files (Relevant Sections)
+- `backend/accounts/models.py` (lines 101-117) - `LabStatus` model
+- `backend/accounts/views.py` (lines 379-467) - Lab endpoints:
+  - `list_labs()` - Returns labs with availability status
+  - `update_lab_status()` - Updates lab metadata
+  - `create_lab()` - Creates new lab entries
+- `backend/accounts/urls.py` - URL routing for lab endpoints
 
-Prevent overlooked or duplicated maintenance tasks
+### Shared Dependencies
+- `src/api/entities.js` - Entity definitions
+- `src/api/base44Client.js` - API client setup
+- `src/lib/utils.js` - Common utilities
+- `src/components/ui/*` - UI components (card, button, input, badge, etc.)
 
-✨ Key Features
+## Subtasks
 
-Centralized Issue View – Displays all reported infrastructure issues across labs
+### 2.1 Backend – Define lab availability rules
+- Files: `backend/accounts/models.py` (LabStatus model), `backend/accounts/views.py` (list_labs)
 
-Real-Time Status Updates – Issue status updates immediately after changes
+### 2.2 Backend – Maintain lab metadata (location, capacity)
+- Files: `backend/accounts/models.py` (LabStatus fields), `backend/accounts/views.py` (create_lab, update_lab_status)
 
-Clear Visual Indicators – Status badges (e.g., Pending / In Progress / Fixed)
+### 2.3 Frontend – Display available labs list
+- Files: `src/pages/FindLabs.jsx`, `src/components/cards/LabCard.jsx`
 
-Action-Oriented UI – Maintenance staff can quickly mark issues as resolved
+### 2.4 Test – Handle no available labs scenario
+- Files: `src/pages/FindLabs.jsx` (lines 218-226) - Empty state handling
 
-Responsive Dashboard – Optimized for desktop and tablet usage
+## Notes
 
-Clean & Professional Design – Modern UI with cards, icons, and subtle animations
-
-🏗️ System Architecture
-Backend (Django)
-
-Framework: Django
-
-Architecture: REST-style endpoints using JsonResponse
-
-Database: SQLite (development) / PostgreSQL (production-ready)
-
-Models
-
-Issue
-
-id
-
-title
-
-description
-
-status (Pending / In Progress / Fixed)
-
-created_at
-
-updated_at
-
-lab (ForeignKey)
-
-API Endpoints
-Method	Endpoint	Description
-GET	/infrastructure/api/issues/	Retrieve all reported issues
-POST	/infrastructure/api/issues/update/<issue_id>/	Update issue status
-GET	/infrastructure/api/labs/	Retrieve lab metadata
-Frontend
-
-Technology: HTML / CSS / JavaScript
-
-Design Approach: Card-based dashboard UI
-
-UX Highlights:
-
-Status color coding
-
-Hover effects and transitions
-
-Easy-to-scan layout for quick decision making
-
-🧪 Testing
-
-Backend testing ensures data integrity and correct behavior.
-
-Covered Tests
-
-Issue model creation
-
-Issue status transitions
-
-API response validity
-
-Status update persistence in the database
-
-Run Tests
-cd BACKEND
-python manage.py test infrastructure
-
-🚀 How to Run the Project
-1️⃣ Backend Setup
-cd BACKEND
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS / Linux
-source venv/bin/activate
-
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-
-2️⃣ Frontend
-
-Open the dashboard UI file (e.g., index.html)
-or run the frontend server if applicable.
-
-🧹 Repository Hygiene
-
-To prevent unnecessary merge conflicts:
-
-All __pycache__ folders and .pyc files are excluded
-
-node_modules is ignored
-
-Environment and build artifacts are excluded
-
-.gitignore
-# Python
-__pycache__/
-*.py[cod]
-*.sqlite3
-.env
-venv/
-
-# Django
-*.log
-staticfiles/
-media/
-
-# Node
-node_modules/
-dist/
-build/
-
-# OS
-.DS_Store
-Thumbs.db
-
-📎 Notes
-
-This User Story integrates seamlessly with other campus monitoring features
-
-Designed for future scalability (notifications, filters, analytics)
-
-Suitable for real-world campus infrastructure management systems
-
-👥 Contributors
-
-Team 11 – Campus Infrastructure Project
-
-Software Engineering Program
-=======
-
-
-# 📢 User Story 5: Campus Alerts System
-
-## Project Overview
-
-This module provides a real-time announcement system for the campus management hub. It allows students and staff to stay informed about urgent infrastructure updates, maintenance schedules, and general announcements.
-
-## Features
-
-* **Dynamic Alert Display:** Alerts are fetched from a Django REST API and displayed on the frontend dashboard.
-* **Urgency Levels:** Supports three levels of alerts:
-* `URGENT` (Red/Siren 🚨) - Critical issues.
-* `WARNING` (Yellow/Warning ⚠️) - Maintenance or partial closures.
-* `INFO` (Blue/Info ℹ️) - General updates.
-
-
-* **Active Status Filter:** Only displays alerts marked as "Active" in the database.
-* **Responsive UI:** Mobile-friendly grid layout with clean CSS animations.
-
-## Tech Stack
-
-* **Backend:** Python, Django, Django REST Framework.
-* **Frontend:** React (Hooks), Axios, CSS-in-JS.
-* **Database:** SQLite (Development).
-
-## Backend Implementation
-
-The backend consists of a Django model `Alert` with the following schema:
-
-* `title`: The header of the alert.
-* `message`: Detailed description.
-* `alert_type`: Selection from `URGENT`, `WARNING`, or `INFO`.
-* `is_active`: Boolean to toggle visibility.
-* `created_at`: Automatic timestamp.
-
-## Frontend Implementation
-
-The React frontend uses the `useEffect` hook to fetch data on load.
-
-* **Component:** `ActiveAnnouncements.js`
-* **Styling:** Custom CSS for hover effects and sliding entrance animations.
-* **State Management:** Local React state to handle API responses and loading status.
-
-## How to Test
-
-1. **Backend:**
-* Run `python manage.py runserver`.
-* Go to `http://127.0.0.1:8000/admin`.
-* Add a new **Alert** object and mark it as "Active".
-
-
-2. **Frontend:**
-* Navigate to the homepage.
-* Verify the alert appears in the "Active Announcements" section with the correct icon and color.
-
-
-1. **שמור את הקובץ:** צור קובץ חדש בשם `README_US5.md` בתיקייה הראשית שלך.
-2. **עבור US7:** האם תרצה שאצור לך README דומה גם עבור דאשבורד התחזוקה (US7)? שם נוסיף גם את סעיף ה-Unit Tests.
->>>>>>> faa51c03d2e8a55a6b96fb6e2d691ebb36ad027e
+- This branch contains ONLY files for US-2
+- Backend files contain multiple models/views; only US-2 relevant sections (LabStatus) are used
+- Shared UI components are included as dependencies
