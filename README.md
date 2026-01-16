@@ -1,45 +1,74 @@
-# US-2: Find Available Lab
+# US-8: User Management
 
-This branch contains ONLY the implementation for **US-2: Find Available Lab**.
+This branch contains ONLY the implementation for **US-8: User Management**.
 
-Allows students to quickly locate free computer labs suitable for practice.
+Allows admins to manage users, roles, and role requests. Users can register and request role changes.
 
 ## Files Included
 
-### US-2 Specific Files
-- `src/pages/FindLabs.jsx` - Main page component for finding available labs
-- `src/components/cards/LabCard.jsx` - Lab display card component
+### US-8 Specific Files
+- `src/pages/UserManagement.jsx` - Admin user management dashboard
+- `src/pages/Register.jsx` - User registration page
+- `src/pages/RoleSelect.jsx` - Role selection after registration
 
 ### Backend Files (Relevant Sections)
-- `backend/accounts/models.py` (lines 101-117) - `LabStatus` model
-- `backend/accounts/views.py` (lines 379-467) - Lab endpoints:
-  - `list_labs()` - Returns labs with availability status
-  - `update_lab_status()` - Updates lab metadata
-  - `create_lab()` - Creates new lab entries
-- `backend/accounts/urls.py` - URL routing for lab endpoints
+- `backend/accounts/models.py` (lines ~4-47) - `Profile` and `RoleRequest` models
+- `backend/accounts/views.py` (lines ~50-150, ~800-1100) - User management endpoints:
+  - `register()` - User registration
+  - `admin_users()` - List all users
+  - `admin_role_requests()` - List role requests
+  - `admin_approve_role()` - Approve role request
+  - `admin_reject_role()` - Reject role request
+  - `admin_stats()` - Admin dashboard statistics
+- `backend/accounts/urls.py` - URL routing for user management endpoints
 
 ### Shared Dependencies
-- `src/api/entities.js` - Entity definitions
-- `src/api/base44Client.js` - API client setup
-- `src/lib/utils.js` - Common utilities
+- `src/state/AuthContext.jsx` - Authentication context with `register()` and `setRole()` functions
 - `src/components/ui/*` - UI components (card, button, input, badge, etc.)
 
 ## Subtasks
 
-### 2.1 Backend – Define lab availability rules
-- Files: `backend/accounts/models.py` (LabStatus model), `backend/accounts/views.py` (list_labs)
+### 8.1 Backend – Define system user roles
+- Files: `backend/accounts/models.py` (Profile model with ROLE_CHOICES), `backend/accounts/views.py` (role management)
 
-### 2.2 Backend – Maintain lab metadata (location, capacity)
-- Files: `backend/accounts/models.py` (LabStatus fields), `backend/accounts/views.py` (create_lab, update_lab_status)
+### 8.2 Backend – Define permissions per role
+- Files: `backend/accounts/views.py` (role-based access control), `src/pages/UserManagement.jsx` (rolePermissions)
 
-### 2.3 Frontend – Display available labs list
-- Files: `src/pages/FindLabs.jsx`, `src/components/cards/LabCard.jsx`
+### 8.3 Frontend – Design role management interface
+- Files: `src/pages/UserManagement.jsx`, `src/pages/Register.jsx`, `src/pages/RoleSelect.jsx`
 
-### 2.4 Test – Handle no available labs scenario
-- Files: `src/pages/FindLabs.jsx` (lines 218-226) - Empty state handling
+### 8.4 Test – Validate access restrictions per role
+- Files: `src/pages/UserManagement.jsx` (lines 128-138) - Admin-only access check
+
+## Key Features
+
+### User Registration
+- Email and password registration
+- Password confirmation
+- Automatic redirect to role selection
+
+### Role Selection
+- Student role (immediate access)
+- Lecturer role (requires approval)
+- Manager role (requires approval with manager type and reason)
+
+### Admin Dashboard
+- View all users with roles
+- Approve/reject role requests
+- View system statistics
+- User distribution by role
+- Pending requests count
+
+### Role Request Management
+- View pending role requests
+- Approve requests (automatic role assignment)
+- Reject requests with optional reason
+- View request history
 
 ## Notes
 
-- This branch contains ONLY files for US-2
-- Backend files contain multiple models/views; only US-2 relevant sections (LabStatus) are used
+- This branch contains ONLY files for US-8
+- Backend files contain multiple models/views; only US-8 relevant sections are used
 - Shared UI components are included as dependencies
+- Admin-only access enforced in UserManagement.jsx
+- Role selection flow: Register → Role Selection → Dashboard (or pending approval)
