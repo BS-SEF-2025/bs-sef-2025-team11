@@ -48,6 +48,7 @@ urlpatterns = [
     path("admin/role-requests", views.admin_role_requests, name="admin_role_requests"),
     path("admin/role-requests/<int:request_id>/approve", views.admin_approve_role, name="admin_approve_role"),
     path("admin/role-requests/<int:request_id>/reject", views.admin_reject_role, name="admin_reject_role"),
+    path("admin/users/create", views.admin_create_user, name="admin_create_user"),
     
     # Test endpoints
     path("test", views.test_endpoint, name="test"),

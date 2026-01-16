@@ -1201,3 +1201,52 @@ def admin_reject_role(request, request_id):
         return JsonResponse({"message": "Request not found"}, status=404)
     except Exception as e:
         return JsonResponse({"message": f"Error: {str(e)}"}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@require_auth
+def admin_create_user(request):
+    user = request.user_obj
+    prof, _ = Profile.objects.get_or_create(user=user)
+    if prof.role != "admin":
+        return JsonResponse({"message": "Only admins can create users"}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
+        role = data.get("role", "student")
+        department = data.get("department", "")
+        manager_type = data.get("manager_type", "")
+        
+        if not email or not password:
+            return JsonResponse({"message": "Email and password are required"}, status=400)
+            
+        if User.objects.filter(username=email).exists() or User.objects.filter(email=email).exists():
+            return JsonResponse({"message": "User already exists"}, status=400)
+            
+        # Create user
+        new_user = User.objects.create_user(username=email, email=email, password=password)
+        new_user.save()
+        
+        # Create profile with specific role
+        new_prof, _ = Profile.objects.get_or_create(user=new_user)
+        new_prof.role = role
+        new_prof.department = department
+        if role == "manager":
+            new_prof.manager_type = manager_type
+        new_prof.save()
+        
+        return JsonResponse({
+            "message": "User created successfully",
+            "user": {
+                "id": new_user.id,
+                "email": new_user.email,
+                "role": role
+            }
+        })
+    except Exception as e:
+        import traceback
+        print(f"Error creating user: {str(e)}")
+        print(traceback.format_exc())
+        return JsonResponse({"message": f"Error: {str(e)}"}, status=500)
