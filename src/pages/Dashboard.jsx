@@ -74,10 +74,14 @@ export default function Dashboard() {
           const faultsRes = await fetch(`${API_BASE || ''}/api/faults/list`, { headers });
           if (faultsRes.ok) {
             const faultsData = await faultsRes.json();
-            const myFaults = (faultsData.faults || []).filter(f => f.reporter_email === user?.email);
+            const myFaults = (faultsData.faults || []).filter(f => f.reported_by === user?.email);
             setFaults(myFaults);
+          } else if (faultsRes.status !== 404) {
+            // Only log if it's not a 404 (which just means no reports)
+            console.error('Failed to fetch faults:', faultsRes.status);
           }
         } catch (e) {
+          // Silently handle network errors - don't show toast
           console.error('Failed to fetch faults:', e);
         }
       } else {
@@ -87,8 +91,12 @@ export default function Dashboard() {
           if (faultsRes.ok) {
             const faultsData = await faultsRes.json();
             setFaults(faultsData.faults || []);
+          } else if (faultsRes.status !== 404) {
+            // Only log if it's not a 404 (which just means no reports)
+            console.error('Failed to fetch faults:', faultsRes.status);
           }
         } catch (e) {
+          // Silently handle network errors - don't show toast
           console.error('Failed to fetch faults:', e);
         }
       }
@@ -120,7 +128,7 @@ export default function Dashboard() {
     }
   };
 
-  const myFaults = faults.filter(f => f.reporter_email === user?.email);
+  const myFaults = faults.filter(f => f.reported_by === user?.email);
   const openFaults = faults.filter(f => ['open', 'in_progress'].includes(f.status));
   const availableLabs = labs.filter(l => l.is_available && l.current_occupancy < l.max_capacity);
   const availableClassrooms = classrooms.filter(c => c.is_available && c.current_occupancy < c.max_capacity);

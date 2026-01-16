@@ -33,6 +33,11 @@ export default function FaultManagement() {
   const fetchFaults = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(`${API_BASE || ''}/api/faults/list`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -43,12 +48,24 @@ export default function FaultManagement() {
       if (response.ok) {
         const data = await response.json();
         setFaults(data.faults || []);
+      } else if (response.status === 401) {
+        // Unauthorized - user needs to log in again
+        console.error('Unauthorized - please log in again');
+      } else if (response.status !== 404) {
+        // Only show error if it's not a 404 (404 just means no reports exist)
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to load fault reports:', errorData.message || response.status);
+        // Only show toast for server errors (500+), not client errors
+        if (response.status >= 500) {
+          toast.error('Failed to load fault reports. Please try again later.');
+        }
       } else {
-        toast.error('Failed to load fault reports');
+        // 404 means no reports - this is fine, just set empty array
+        setFaults([]);
       }
     } catch (error) {
       console.error('Error fetching faults:', error);
-      toast.error('Failed to load fault reports');
+      // Don't show toast for network errors - they're usually temporary
     } finally {
       setLoading(false);
     }
@@ -61,8 +78,8 @@ export default function FaultManagement() {
       filtered = filtered.filter(fault =>
         fault.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         fault.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        fault.building.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        fault.reporter_email?.toLowerCase().includes(searchTerm.toLowerCase())
+        fault.location?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        fault.reported_by?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 

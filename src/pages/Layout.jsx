@@ -18,6 +18,7 @@ export default function Layout() {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/library-status', label: 'Library', icon: BookOpen },
     { path: '/find-labs', label: 'Labs', icon: FlaskConical },
+    { path: '/classrooms', label: 'Classrooms', icon: LayoutDashboard },
   ];
 
   if (user?.role === 'student' || user?.role === 'lecturer') {

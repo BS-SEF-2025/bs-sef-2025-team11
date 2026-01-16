@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/state/AuthContext';
-import { CheckCircle, XCircle, Clock, BookOpen, FlaskConical, User, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, BookOpen, FlaskConical, User, Calendar, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,14 +15,23 @@ export default function ManagerRequests() {
   const [processing, setProcessing] = useState({});
   const [rejectionReasons, setRejectionReasons] = useState({});
 
+  // Check if user is manager or admin
+  const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
+
   useEffect(() => {
-    fetchPendingUpdates();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchPendingUpdates, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    if (isManagerOrAdmin) {
+      fetchPendingUpdates();
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchPendingUpdates, 30000);
+      return () => clearInterval(interval);
+    } else {
+      setLoading(false);
+    }
+  }, [isManagerOrAdmin]);
 
   const fetchPendingUpdates = async () => {
+    if (!isManagerOrAdmin) return;
+    
     try {
       const token = localStorage.getItem("token");
       const headers = {
@@ -34,15 +43,21 @@ export default function ManagerRequests() {
       if (res.ok) {
         const data = await res.json();
         setPendingUpdates(data);
+      } else if (res.status === 401 || res.status === 403) {
+        // Unauthorized/Forbidden - user doesn't have permission
+        // Don't show error toast, just log it
+        console.log('Access denied to pending updates');
+        setPendingUpdates({ library_requests: [], lab_requests: [] });
       } else {
-        const error = await res.json();
-        if (error.message && !error.message.includes('Manager or admin')) {
+        // Other errors - only show for server errors
+        const error = await res.json().catch(() => ({}));
+        if (res.status >= 500) {
           toast.error(error.message || 'Failed to load pending updates');
         }
       }
     } catch (error) {
       console.error('Failed to fetch pending updates:', error);
-      toast.error('Failed to load pending updates');
+      // Don't show toast for network errors
     } finally {
       setLoading(false);
     }
@@ -110,6 +125,20 @@ export default function ManagerRequests() {
   };
 
   const totalPending = pendingUpdates.library_requests?.length + pendingUpdates.lab_requests?.length || 0;
+
+  // Show access denied if user is not manager/admin
+  if (!isManagerOrAdmin) {
+    return (
+      <div className="p-6">
+        <Card className="p-8 text-center">
+          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h2>
+          <p className="text-slate-600 mb-4">You need manager or admin privileges to view pending update requests.</p>
+          <p className="text-sm text-slate-500">Only managers and admins can approve/reject library and lab status updates.</p>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -71,22 +71,45 @@ export default function FindLabs() {
 
   const handleAddLab = async (e) => {
     e?.preventDefault();
+    
+    const isManager = user?.role === 'manager' || user?.role === 'admin';
+    if (!isManager) {
+      toast.error('Only managers and admins can add labs');
+      return;
+    }
+    
+    if (!newLab.name || !newLab.max_capacity) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
     setCreating(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error('Please log in to add labs');
+        return;
+      }
+      
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       };
 
+      console.log('Creating lab:', newLab);
       const res = await fetch(`${API_BASE || ''}/api/labs/create`, {
         method: 'POST',
+        mode: 'cors',
         headers,
         body: JSON.stringify(newLab),
       });
 
+      const responseText = await res.text();
+      console.log('Create lab response status:', res.status);
+      console.log('Create lab response:', responseText);
+
       if (res.ok) {
-        const data = await res.json();
+        const data = JSON.parse(responseText);
         toast.success('Lab added successfully!');
         setNewLab({
           name: '',
@@ -100,12 +123,22 @@ export default function FindLabs() {
         setShowAddForm(false);
         fetchLabs();
       } else {
-        const error = await res.json();
-        toast.error(error.message || 'Failed to add lab');
+        let error;
+        try {
+          error = JSON.parse(responseText);
+        } catch {
+          error = { message: responseText || `Failed to add lab (status ${res.status})` };
+        }
+        console.error('Failed to add lab:', error);
+        if (res.status === 401 || res.status === 403) {
+          toast.error(error.message || 'You do not have permission to add labs');
+        } else {
+          toast.error(error.message || 'Failed to add lab');
+        }
       }
     } catch (error) {
       console.error('Failed to add lab:', error);
-      toast.error('Failed to add lab');
+      toast.error('Failed to add lab. Please try again.');
     } finally {
       setCreating(false);
     }

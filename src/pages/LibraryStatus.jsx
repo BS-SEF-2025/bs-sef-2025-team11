@@ -50,6 +50,12 @@ export default function LibraryStatus() {
   const fetchLibraries = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error('Please log in to view libraries');
+        setLoading(false);
+        return;
+      }
+      
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -59,12 +65,20 @@ export default function LibraryStatus() {
       if (res.ok) {
         const data = await res.json();
         setLibraries(data.libraries || []);
+      } else if (res.status === 401) {
+        toast.error('Your session has expired. Please log in again.');
+        localStorage.removeItem("token");
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 2000);
       } else {
         // Fallback to old endpoint for backward compatibility
         const oldRes = await fetch(`${API_BASE || ''}/api/library/status`, { headers });
         if (oldRes.ok) {
           const oldData = await oldRes.json();
           setLibraries([oldData]);
+        } else {
+          console.error('Failed to fetch libraries:', res.status);
         }
       }
     } catch (error) {
@@ -77,21 +91,44 @@ export default function LibraryStatus() {
 
   const handleAddLibrary = async (e) => {
     e?.preventDefault();
+    
+    if (!isManager) {
+      toast.error('Only managers and admins can add libraries');
+      return;
+    }
+    
+    if (!newLibrary.name || !newLibrary.max_capacity) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
     setCreating(true);
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error('Please log in to add libraries');
+        return;
+      }
+      
       const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       };
 
+      console.log('Creating library:', newLibrary);
       const res = await fetch(`${API_BASE || ''}/api/library/create`, {
         method: 'POST',
+        mode: 'cors',
         headers,
         body: JSON.stringify(newLibrary),
       });
 
+      const responseText = await res.text();
+      console.log('Create library response status:', res.status);
+      console.log('Create library response:', responseText);
+
       if (res.ok) {
+        const data = JSON.parse(responseText);
         toast.success('Library added successfully!');
         setNewLibrary({
           name: '',
@@ -102,12 +139,34 @@ export default function LibraryStatus() {
         setShowAddForm(false);
         fetchLibraries();
       } else {
-        const error = await res.json();
-        toast.error(error.message || 'Failed to add library');
+        let error;
+        try {
+          error = JSON.parse(responseText);
+        } catch {
+          error = { message: responseText || `Failed to add library (status ${res.status})` };
+        }
+        console.error('Failed to add library:', error);
+        if (res.status === 401) {
+          toast.error('Your session has expired. Please log in again.');
+          setTimeout(() => {
+            localStorage.removeItem("token");
+            window.location.href = '/login';
+          }, 2000);
+        } else if (res.status === 403) {
+          // Check if user has pending manager role request
+          const errorMsg = error.message || 'You do not have permission to add libraries';
+          if (user?.role === 'student') {
+            toast.error('Only managers and admins can add libraries. If you requested manager access, please wait for admin approval.');
+          } else {
+            toast.error(errorMsg);
+          }
+        } else {
+          toast.error(error.message || 'Failed to add library');
+        }
       }
     } catch (error) {
       console.error('Failed to add library:', error);
-      toast.error('Failed to add library');
+      toast.error('Failed to add library. Please try again.');
     } finally {
       setCreating(false);
     }

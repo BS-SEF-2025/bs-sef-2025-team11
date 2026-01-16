@@ -13,7 +13,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -35,10 +35,68 @@ export default function Register() {
 
     try {
       console.log('=== REGISTER ATTEMPT ===');
-      await register(email, password);
+      const result = await register(email, password);
       console.log('=== REGISTER SUCCESS ===');
+      console.log('Registration result:', result);
+      
+      // Verify token is stored
+      const token = localStorage.getItem("token");
+      console.log('Token after registration:', token ? `${token.substring(0, 20)}...` : 'NOT FOUND');
+      
+      if (!token) {
+        throw new Error('Token was not stored properly. Please try again.');
+      }
+      
+      // Verify user is in the result
+      if (!result.user) {
+        throw new Error('User data was not received. Please try again.');
+      }
+      
+      console.log('User from registration:', result.user);
+      
+      // CRITICAL: Wait for user state to be set in AuthContext
+      // Poll for user state to be set (with timeout) - check the user from context
+      let attempts = 0;
+      const maxAttempts = 20; // 2 seconds max wait
+      let finalUser = user || result.user;
+      
+      while (!finalUser && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+        // The user state should be set by now from the register function
+        // But we'll check localStorage and result as fallback
+        finalUser = user || result.user;
+      }
+      
+      // Double-check that token and user are still there
+      const finalToken = localStorage.getItem("token");
+      
+      if (!finalToken) {
+        throw new Error('Token was lost after registration. Please try again.');
+      }
+      
+      if (!finalUser) {
+        // Last resort: use the user from result
+        console.warn('User not in context, using user from registration result');
+        if (!result.user) {
+          throw new Error('User data was lost after registration. Please try again.');
+        }
+        finalUser = result.user;
+      }
+      
+      console.log('Final check - Token exists:', !!finalToken);
+      console.log('Final check - User exists:', !!finalUser);
+      console.log('Final check - User email:', finalUser?.email);
+      
       toast.success('Registration successful!');
-      navigate('/role-selection');
+      
+      // Small delay to ensure state is fully propagated
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Navigate to role selection - the user should be authenticated
+      // Use replace: true to prevent back button from going to register page
+      console.log('Navigating to role-selection...');
+      navigate('/role-selection', { replace: true });
     } catch (error) {
       console.error('=== REGISTER ERROR ===', error);
       const errorMessage = error.message || 'Registration failed. Please try again.';

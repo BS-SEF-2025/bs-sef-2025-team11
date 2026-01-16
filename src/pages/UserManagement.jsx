@@ -371,7 +371,7 @@ export default function UserManagement() {
                       <p className="text-sm text-slate-600 mb-2">
                         Requesting role: <span className="font-semibold capitalize">{req.requested_role}</span>
                         {req.manager_type && (
-                          <span className="ml-2">({req.manager_type.replace('_', ' ')})</span>
+                          <span className="ml-2 text-blue-600">• Manager Type: <span className="font-semibold capitalize">{req.manager_type.replace('_', ' ')}</span></span>
                         )}
                       </p>
                       {req.reason && (

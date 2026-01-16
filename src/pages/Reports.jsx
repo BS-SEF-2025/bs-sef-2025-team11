@@ -28,6 +28,11 @@ export default function Reports() {
   const fetchReports = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(`${API_BASE || ''}/api/faults/list`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -38,12 +43,28 @@ export default function Reports() {
       if (response.ok) {
         const data = await response.json();
         setFaults(data.faults || []);
+      } else if (response.status === 401) {
+        // Unauthorized - user needs to log in again
+        console.error('Unauthorized - please log in again');
+        // Don't show toast, just log it
+      } else if (response.status !== 404) {
+        // Only show error if it's not a 404 (404 just means no reports exist)
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to load reports:', errorData.message || response.status);
+        // Only show toast for actual errors, not for empty data
+        if (response.status >= 500) {
+          toast.error('Failed to load reports. Please try again later.');
+        }
       } else {
-        toast.error('Failed to load reports');
+        // 404 means no reports - this is fine, just set empty array
+        setFaults([]);
       }
     } catch (error) {
       console.error('Error fetching reports:', error);
-      toast.error('Failed to load reports');
+      // Only show toast for network errors if it's a critical failure
+      if (error.message && !error.message.includes('Failed to fetch')) {
+        // Don't show toast for network errors - they're usually temporary
+      }
     } finally {
       setLoading(false);
     }
@@ -54,9 +75,9 @@ export default function Reports() {
 
     if (searchTerm) {
       filtered = filtered.filter(fault =>
-        fault.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        fault.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         fault.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        fault.building.toLowerCase().includes(searchTerm.toLowerCase())
+        fault.location?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -133,10 +154,10 @@ export default function Reports() {
   }
 
   const isManager = user?.role === 'manager' || user?.role === 'admin';
-  const myReports = faults.filter(f => f.reporter_email === user?.email);
+  const myReports = faults.filter(f => f.reported_by === user?.email);
   const displayReports = isManager ? faults : myReports;
   const filteredDisplayReports = searchTerm 
-    ? filteredFaults.filter(f => isManager || f.reporter_email === user?.email)
+    ? filteredFaults.filter(f => isManager || f.reported_by === user?.email)
     : displayReports;
 
   return (
@@ -216,8 +237,7 @@ export default function Reports() {
                   <div>
                     <p className="text-xs text-slate-500">Location</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {fault.building}
-                      {fault.room_number && ` • Room ${fault.room_number}`}
+                      {fault.location || 'Not specified'}
                     </p>
                   </div>
                 </div>
@@ -236,7 +256,7 @@ export default function Reports() {
                     <div>
                       <p className="text-xs text-slate-500">Reported By</p>
                       <p className="text-sm font-medium text-slate-900">
-                        {fault.reporter_email}
+                        {fault.reported_by}
                       </p>
                     </div>
                   </div>
@@ -266,7 +286,7 @@ export default function Reports() {
               <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <Calendar className="w-4 h-4" />
-                  <span>Reported {formatDate(fault.created_date)}</span>
+                  <span>Reported {formatDate(fault.created_at)}</span>
                 </div>
                 {isManager && (
                   <Button
