@@ -19,6 +19,7 @@ import ManagerRequests from "@/pages/ManagerRequests.jsx";
 import RequestApprovals from "@/pages/RequestApprovals.jsx";
 import OccupancyOverview from "@/pages/OccupancyOverview.jsx";
 import UserManagement from "@/pages/UserManagement.jsx";
+import RecurringIssues from "@/pages/RecurringIssues.jsx";
 
 import { useAuth } from "@/state/AuthContext.jsx";
 
@@ -40,7 +41,7 @@ function RequireAuth({ children }) {
       </div>
     );
   }
-  
+
   // If we have a token but no user, wait a bit before redirecting
   // This handles the case right after registration
   useEffect(() => {
@@ -55,7 +56,7 @@ function RequireAuth({ children }) {
       setWaitingForUser(false);
     }
   }, [token, user, loading]);
-  
+
   // If we have token but no user, show loading while waiting
   if (token && !user && waitingForUser) {
     return (
@@ -67,13 +68,13 @@ function RequireAuth({ children }) {
       </div>
     );
   }
-  
+
   // No token and no user - redirect to login
   if (!user && !token) {
     console.log('RequireAuth: No user and no token, redirecting to login');
     return <Navigate to="/login" replace />;
   }
-  
+
   // If we have token but still no user after waiting, allow access anyway
   // The component can handle the missing user state
   if (!user && token) {
@@ -81,12 +82,12 @@ function RequireAuth({ children }) {
     // Don't redirect - let them proceed (token is valid)
     return children;
   }
-  
+
   if (!user) {
     console.log('RequireAuth: No user after loading, redirecting to login');
     return <Navigate to="/login" replace />;
   }
-  
+
   return children;
 }
 
@@ -118,7 +119,7 @@ function RequireRole({ children }) {
 
 export default function Pages() {
   console.log('📄 Pages component rendering...');
-  
+
   // Safety check - ensure we always render something
   try {
     return (
@@ -160,6 +161,7 @@ export default function Pages() {
           <Route path="/request-approvals" element={<RequestApprovals />} />
           <Route path="/occupancy-overview" element={<OccupancyOverview />} />
           <Route path="/user-management" element={<UserManagement />} />
+          <Route path="/recurring-issues" element={<RecurringIssues />} />
         </Route>
 
         {/* fallback */}
@@ -169,10 +171,10 @@ export default function Pages() {
   } catch (error) {
     console.error('❌ Pages component error:', error);
     return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#f5f5f5',
         padding: '20px'

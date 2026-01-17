@@ -140,10 +140,11 @@ export default function RequestApprovals() {
   };
 
   const getAvailableRooms = (request) => {
+    // Return all rooms of the correct type, we'll indicate availability in the dropdown
     if (request.room_type === 'classroom') {
-      return classrooms.filter(c => c.is_available && c.max_capacity >= request.expected_attendees);
+      return classrooms;
     } else {
-      return labs.filter(l => l.is_available && l.max_capacity >= request.expected_attendees);
+      return labs;
     }
   };
 
@@ -271,17 +272,19 @@ export default function RequestApprovals() {
                           className="w-full h-10 px-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="">Select a room...</option>
-                          {availableRooms.map(room => (
-                            <option key={room.id} value={room.id}>
-                              {room.name} - {room.building} Room {room.room_number} (Capacity: {room.max_capacity}, Available)
-                            </option>
-                          ))}
+                          {availableRooms.map(room => {
+                            const isTooSmall = room.max_capacity < req.expected_attendees;
+                            const isBusy = !room.is_available;
+                            return (
+                              <option key={room.id} value={room.id}>
+                                {room.name} - {room.building} {room.room_number} 
+                                (Cap: {room.max_capacity})
+                                {isBusy ? ' [currently UNAVAILABLE]' : ''}
+                                {isTooSmall ? ' [Too Small]' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
-                        {availableRooms.length === 0 && (
-                          <p className="text-sm text-red-600 mt-2">
-                            No available {req.room_type === 'classroom' ? 'classrooms' : 'labs'} with sufficient capacity
-                          </p>
-                        )}
                       </div>
                     </div>
                   </div>

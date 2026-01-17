@@ -49,6 +49,10 @@ urlpatterns = [
     path("admin/role-requests/<int:request_id>/approve", views.admin_approve_role, name="admin_approve_role"),
     path("admin/role-requests/<int:request_id>/reject", views.admin_reject_role, name="admin_reject_role"),
     
+    # Recurring issues (US-11)
+    path("reports/recurring", views.get_recurring_issues, name="recurring_issues"),
+    path("reports/log-overload", views.log_overload, name="log_overload"),
+    
     # Test endpoints
     path("test", views.test_endpoint, name="test"),
     path("test-auth", views.test_auth, name="test_auth"),

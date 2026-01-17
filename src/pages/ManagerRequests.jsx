@@ -11,6 +11,7 @@ const API_BASE = import.meta.env.DEV ? "" : "http://127.0.0.1:8000";
 export default function ManagerRequests() {
   const { user } = useAuth();
   const [pendingUpdates, setPendingUpdates] = useState({ library_requests: [], lab_requests: [] });
+  const [roleRequests, setRoleRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState({});
   const [rejectionReasons, setRejectionReasons] = useState({});
@@ -31,7 +32,7 @@ export default function ManagerRequests() {
 
   const fetchPendingUpdates = async () => {
     if (!isManagerOrAdmin) return;
-    
+
     try {
       const token = localStorage.getItem("token");
       const headers = {
@@ -39,27 +40,59 @@ export default function ManagerRequests() {
         'Content-Type': 'application/json',
       };
 
+      // Fetch Update Requests (Labs/Library)
       const res = await fetch(`${API_BASE || ''}/api/updates/pending`, { headers });
       if (res.ok) {
         const data = await res.json();
         setPendingUpdates(data);
-      } else if (res.status === 401 || res.status === 403) {
-        // Unauthorized/Forbidden - user doesn't have permission
-        // Don't show error toast, just log it
-        console.log('Access denied to pending updates');
-        setPendingUpdates({ library_requests: [], lab_requests: [] });
-      } else {
-        // Other errors - only show for server errors
-        const error = await res.json().catch(() => ({}));
-        if (res.status >= 500) {
-          toast.error(error.message || 'Failed to load pending updates');
-        }
       }
+
+      // Fetch Role Requests (New Users)
+      const roleRes = await fetch(`${API_BASE || ''}/api/admin/role-requests`, { headers });
+      if (roleRes.ok) {
+        const roleData = await roleRes.json();
+        // Filter only pending requests
+        setRoleRequests(roleData.requests.filter(r => r.status === 'pending') || []);
+      }
+
     } catch (error) {
       console.error('Failed to fetch pending updates:', error);
-      // Don't show toast for network errors
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRoleAction = async (action, requestId, reason = '') => {
+    setProcessing({ ...processing, [`role-${requestId}`]: true });
+    try {
+      const token = localStorage.getItem("token");
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
+      const endpoint = action === 'approve' ? 'approve' : 'reject';
+      const body = action === 'reject' ? JSON.stringify({ rejection_reason: reason }) : null;
+
+      const res = await fetch(`${API_BASE || ''}/api/admin/role-requests/${requestId}/${endpoint}`, {
+        method: 'POST',
+        headers,
+        body
+      });
+
+      if (res.ok) {
+        toast.success(`Role request ${action}d!`);
+        setRejectionReasons({ ...rejectionReasons, [`role-${requestId}`]: '' });
+        fetchPendingUpdates();
+      } else {
+        const error = await res.json();
+        toast.error(error.message || `Failed to ${action} request`);
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} request:`, error);
+      toast.error(`Failed to ${action} request`);
+    } finally {
+      setProcessing({ ...processing, [`role-${requestId}`]: false });
     }
   };
 
@@ -124,7 +157,9 @@ export default function ManagerRequests() {
     }
   };
 
-  const totalPending = pendingUpdates.library_requests?.length + pendingUpdates.lab_requests?.length || 0;
+  const totalPendingUpdates = pendingUpdates.library_requests?.length + pendingUpdates.lab_requests?.length || 0;
+  const totalRoleRequests = roleRequests.length;
+  const totalPending = totalPendingUpdates + totalRoleRequests;
 
   // Show access denied if user is not manager/admin
   if (!isManagerOrAdmin) {
@@ -168,7 +203,7 @@ export default function ManagerRequests() {
                 {totalPending} Pending {totalPending === 1 ? 'Request' : 'Requests'}
               </h2>
               <p className="text-sm text-slate-600">
-                {pendingUpdates.library_requests?.length || 0} library, {pendingUpdates.lab_requests?.length || 0} lab
+                {pendingUpdates.library_requests?.length || 0} library, {pendingUpdates.lab_requests?.length || 0} lab, {roleRequests.length} user roles
               </p>
             </div>
           </div>
@@ -183,6 +218,75 @@ export default function ManagerRequests() {
         </Card>
       ) : (
         <div className="space-y-6">
+          {/* Role Requests */}
+          {roleRequests.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <User className="w-6 h-6" />
+                New User Enrollments ({roleRequests.length})
+              </h2>
+              <div className="space-y-4">
+                {roleRequests.map((req) => (
+                  <Card key={req.id} className="p-6 border-2 border-green-200">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <User className="w-5 h-5 text-green-600" />
+                          <h3 className="text-lg font-bold text-slate-900">{req.user_email}</h3>
+                        </div>
+                        <p className="text-sm text-slate-600 mb-2">
+                          Requesting Role: <span className="font-bold uppercase text-blue-600">{req.requested_role}</span>
+                          {req.manager_type && (
+                            <span className="ml-2 bg-slate-100 px-2 py-0.5 rounded text-xs">({req.manager_type})</span>
+                          )}
+                        </p>
+                        {req.reason && (
+                          <p className="text-sm text-slate-500 italic">" {req.reason} "</p>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-slate-400 mt-2">
+                          <Calendar className="w-4 h-4" />
+                          <span>Requested: {new Date(req.requested_at).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                        Pending Approval
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-4 border-t border-slate-200">
+                      <Button
+                        onClick={() => handleRoleAction('approve', req.id)}
+                        disabled={processing[`role-${req.id}`]}
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        {processing[`role-${req.id}`] ? 'Approving...' : 'Approve User'}
+                      </Button>
+                      <div className="flex-1 flex gap-2">
+                        <Input
+                          type="text"
+                          placeholder="Rejection reason (optional)"
+                          value={rejectionReasons[`role-${req.id}`] || ''}
+                          onChange={(e) => setRejectionReasons({ ...rejectionReasons, [`role-${req.id}`]: e.target.value })}
+                          className="flex-1"
+                        />
+                        <Button
+                          onClick={() => handleRoleAction('reject', req.id, rejectionReasons[`role-${req.id}`])}
+                          disabled={processing[`role-${req.id}`]}
+                          variant="outline"
+                          className="bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Library Update Requests */}
           {pendingUpdates.library_requests?.length > 0 && (
             <div>

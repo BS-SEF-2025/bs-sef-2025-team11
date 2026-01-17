@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/state/AuthContext';
-import { BookOpen, FlaskConical, AlertTriangle, Plus, ArrowRight, Users, CheckCircle, Clock, XCircle, GraduationCap, Edit2, Save, X } from 'lucide-react';
+import {
+  BookOpen, FlaskConical, AlertTriangle, Plus, ArrowRight,
+  Users, CheckCircle, Clock, XCircle, GraduationCap,
+  Edit2, Save, X, Calendar
+} from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +26,7 @@ export default function Dashboard() {
   const [updating, setUpdating] = useState({});
   const [labInputs, setLabInputs] = useState({});
   const [classroomInputs, setClassroomInputs] = useState({});
+  const [roomRequests, setRoomRequests] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -100,6 +105,19 @@ export default function Dashboard() {
           console.error('Failed to fetch faults:', e);
         }
       }
+
+      // Fetch room requests
+      if (user?.role === 'lecturer' || user?.role === 'manager' || user?.role === 'admin') {
+        try {
+          const roomRequestsRes = await fetch(`${API_BASE || ''}/api/room-requests/list`, { headers });
+          if (roomRequestsRes.ok) {
+            const rrData = await roomRequestsRes.json();
+            setRoomRequests(rrData.requests || []);
+          }
+        } catch (e) {
+          console.error('Failed to fetch room requests:', e);
+        }
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -132,7 +150,7 @@ export default function Dashboard() {
   const openFaults = faults.filter(f => ['open', 'in_progress'].includes(f.status));
   const availableLabs = labs.filter(l => l.is_available && l.current_occupancy < l.max_capacity);
   const availableClassrooms = classrooms.filter(c => c.is_available && c.current_occupancy < c.max_capacity);
-  
+
   // For students, show a simplified dashboard
   const isStudent = user?.role === 'student';
   const isManager = user?.role === 'manager' || user?.role === 'admin';
@@ -255,7 +273,7 @@ export default function Dashboard() {
       <div>
         <h1 className="text-3xl font-bold text-slate-900 mb-2">Dashboard</h1>
         <p className="text-slate-600">
-          Welcome back, <span className="font-semibold">{user?.email}</span>! 
+          Welcome back, <span className="font-semibold">{user?.email}</span>!
           Your role: <span className="font-semibold capitalize">{user?.role || 'student'}</span>
         </p>
       </div>
@@ -317,6 +335,27 @@ export default function Dashboard() {
             <AlertTriangle className="w-12 h-12 text-orange-500" />
           </div>
         </Card>
+
+        {(user?.role === 'student' || user?.role === 'lecturer' || user?.role === 'manager' || user?.role === 'admin') && (
+          <Card className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-600 mb-1">
+                  {user?.role === 'lecturer' ? 'My Room Requests' : 'Pending Approvals'}
+                </p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {user?.role === 'lecturer'
+                    ? roomRequests.filter(r => r.requested_by === user?.email).length
+                    : roomRequests.filter(r => r.status === 'pending').length}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {user?.role === 'lecturer' ? 'total submitted' : 'pending review'}
+                </p>
+              </div>
+              <Calendar className={`w-12 h-12 ${user?.role === 'lecturer' ? 'text-blue-500' : 'text-yellow-500'}`} />
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Library Status Section */}
@@ -378,7 +417,7 @@ export default function Dashboard() {
             {labs.slice(0, 6).map((lab) => {
               const isEditing = editingLab === lab.id;
               const input = labInputs[lab.id] || { current_occupancy: lab.current_occupancy, is_available: lab.is_available };
-              
+
               return (
                 <div key={lab.id} className={`border rounded-lg p-4 ${lab.is_available && lab.current_occupancy < lab.max_capacity ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
                   <div className="flex items-center justify-between mb-2">
@@ -400,7 +439,7 @@ export default function Dashboard() {
                   <p className="text-sm text-slate-600 mb-2">
                     {lab.building} Room {lab.room_number}
                   </p>
-                  
+
                   {isEditing && isManager ? (
                     <div className="space-y-3 pt-2 border-t border-slate-200">
                       <div>
@@ -499,7 +538,7 @@ export default function Dashboard() {
               {classrooms.slice(0, 6).map((classroom) => {
                 const isEditing = editingClassroom === classroom.id;
                 const input = classroomInputs[classroom.id] || { current_occupancy: classroom.current_occupancy, is_available: classroom.is_available };
-                
+
                 return (
                   <div key={classroom.id} className={`border rounded-lg p-4 ${classroom.is_available && classroom.current_occupancy < classroom.max_capacity ? 'border-green-200 bg-green-50' : 'border-slate-200'}`}>
                     <div className="flex items-center justify-between mb-2">
@@ -521,7 +560,7 @@ export default function Dashboard() {
                     <p className="text-sm text-slate-600 mb-2">
                       {classroom.building} Room {classroom.room_number}
                     </p>
-                    
+
                     {isEditing && isManager ? (
                       <div className="space-y-3 pt-2 border-t border-slate-200">
                         <div>
@@ -743,6 +782,24 @@ export default function Dashboard() {
                 <AlertTriangle className="w-6 h-6 text-red-500 mb-2" />
                 <h3 className="font-semibold text-slate-900">Manage Faults</h3>
                 <p className="text-sm text-slate-600">View all reports</p>
+              </Card>
+            </Link>
+          )}
+          {(user?.role === 'student' || user?.role === 'lecturer') && (
+            <Link to="/room-requests">
+              <Card className="p-4 hover:bg-slate-50 cursor-pointer transition border-2 border-blue-200">
+                <Calendar className="w-6 h-6 text-blue-500 mb-2" />
+                <h3 className="font-semibold text-slate-900">Room Requests</h3>
+                <p className="text-sm text-slate-600">Request a room</p>
+              </Card>
+            </Link>
+          )}
+          {(user?.role === 'manager' || user?.role === 'admin') && (
+            <Link to="/request-approvals">
+              <Card className="p-4 hover:bg-slate-50 cursor-pointer transition border-2 border-yellow-200">
+                <CheckCircle className="w-6 h-6 text-yellow-500 mb-2" />
+                <h3 className="font-semibold text-slate-900">Room Approvals</h3>
+                <p className="text-sm text-slate-600">Review requests</p>
               </Card>
             </Link>
           )}

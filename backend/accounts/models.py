@@ -7,12 +7,15 @@ class Profile(models.Model):
         ('lecturer', 'Lecturer'),
         ('manager', 'Manager'),
         ('admin', 'Admin'),
+        ('admin', 'Admin'),
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     department = models.CharField(max_length=100, blank=True, null=True)
     manager_type = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
     
     def __str__(self):
         return f"{self.user.email} - {self.role}"
@@ -39,6 +42,12 @@ class LibraryStatus(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    @property
+    def occupancy_percentage(self):
+        if self.max_capacity > 0:
+            return round((self.current_occupancy / self.max_capacity) * 100)
+        return 0
+
     def __str__(self):
         return self.name
 
@@ -66,6 +75,12 @@ class ClassroomStatus(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    @property
+    def occupancy_percentage(self):
+        if self.max_capacity > 0:
+            return round((self.current_occupancy / self.max_capacity) * 100)
+        return 0
+
     def __str__(self):
         return f"{self.name} - {self.building}"
 
@@ -151,10 +166,15 @@ class FaultReport(models.Model):
     ]
     
     CATEGORY_CHOICES = [
-        ('electrical', 'Electrical'),
-        ('plumbing', 'Plumbing'),
-        ('hvac', 'HVAC'),
+        ('projector', 'Projector / Display'),
+        ('ac', 'Air Conditioning'),
+        ('lighting', 'Lighting'),
         ('furniture', 'Furniture'),
+        ('computer', 'Computer / Hardware'),
+        ('network', 'Network / WiFi'),
+        ('plumbing', 'Plumbing'),
+        ('electrical', 'Electrical'),
+        ('hvac', 'HVAC'),
         ('equipment', 'Equipment'),
         ('other', 'Other'),
     ]
@@ -171,13 +191,36 @@ class FaultReport(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     location = models.CharField(max_length=200, blank=True)
+    building = models.CharField(max_length=100, blank=True)
+    room_number = models.CharField(max_length=50, blank=True)
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='medium')
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     assigned_to = models.CharField(max_length=200, blank=True)
+    resolution_notes = models.TextField(blank=True)
     image = models.CharField(max_length=500, blank=True, null=True)  # Store image URL instead
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+class OverloadRecord(models.Model):
+    RESOURCE_CHOICES = [
+        ('cpu', 'CPU'),
+        ('memory', 'Memory'),
+        ('network', 'Network'),
+        ('occupancy', 'Occupancy'),
+    ]
+    
+    resource_type = models.CharField(max_length=20, choices=RESOURCE_CHOICES)
+    location = models.CharField(max_length=200, blank=True)
+    building = models.CharField(max_length=100, blank=True)
+    room_number = models.CharField(max_length=50, blank=True)
+    description = models.TextField(blank=True)
+    threshold_value = models.FloatField(default=0.0)
+    current_value = models.FloatField(default=0.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
     def __str__(self):
-        return f"{self.title} - {self.reported_by.email}"
+        return f"{self.resource_type} overload at {self.location} - {self.created_at}"
+
+# Import signals to ensure they are registered
+from . import signals

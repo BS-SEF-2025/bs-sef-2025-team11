@@ -5,9 +5,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+from django.db.models import Count, Q
 from .models import (
     Profile, RoleRequest, LibraryStatus, LabStatus, ClassroomStatus,
-    LibraryUpdateRequest, LabUpdateRequest, RoomRequest, FaultReport
+    LibraryUpdateRequest, LabUpdateRequest, RoomRequest, FaultReport,
+    OverloadRecord
 )
 from .jwt import encode_token, decode_token
 from .auth import get_user_from_request, require_auth
@@ -254,18 +256,18 @@ def set_role(request):
             prof.save()
         
         # Handle role assignment
-        if role in ["lecturer", "manager"]:
-            # Create role request but keep user as student until approved
+        if role in ["lecturer", "manager", "student"]:
+            # Create role request but keep user as student (or pre-student) until approved
+            # For student role, they might not have any role yet
             RoleRequest.objects.create(
                 user=user,
                 requested_role=role,
                 reason=reason,
                 status="pending"
             )
-            # Keep role as student, but return user with pending request info
             return JsonResponse({
                 "user": _user_to_dict(user),
-                "message": "Role request submitted for approval. You can use the system as a student for now.",
+                "message": f"Role request for {role} submitted for approval.",
                 "pending_request": True
             })
         elif role == "admin":
@@ -293,9 +295,8 @@ def set_role(request):
                     "pending_request": True
                 })
         else:
-            # Student role can be set immediately
-            prof.role = role
-            prof.save()
+            # Fallback for any other roles (shouldn't happen with validation)
+            pass
             print(f"DEBUG: Role set to '{role}' for user {user.email}")
             return JsonResponse({
                 "user": _user_to_dict(user),
@@ -828,8 +829,8 @@ def reject_lab_update(request, request_id):
 def create_room_request(request):
     user = request.user_obj
     prof, _ = Profile.objects.get_or_create(user=user)
-    if prof.role != "lecturer":
-        return JsonResponse({"message": "Only lecturers can create room requests"}, status=403)
+    if prof.role not in ["lecturer", "student"]:
+        return JsonResponse({"message": "Only lecturers and students can create room requests"}, status=403)
     
     try:
         data = json.loads(request.body)
@@ -880,6 +881,7 @@ def list_room_requests(request):
         "requests": [{
             "id": req.id,
             "requested_by": req.requested_by.email,
+            "requested_by_name": f"{req.requested_by.first_name} {req.requested_by.last_name}".strip() or req.requested_by.username,
             "room_type": req.room_type,
             "classroom_id": req.classroom.id if req.classroom else None,
             "classroom_name": req.classroom.name if req.classroom else None,
@@ -893,6 +895,12 @@ def list_room_requests(request):
             "status": req.status,
             "approved_by": req.approved_by.email if req.approved_by else None,
             "created_at": req.created_at.isoformat(),
+            # Add assigned room details for easier frontend access
+            "assigned_room": {
+                "name": req.classroom.name if req.classroom else (req.lab.name if req.lab else None),
+                "building": req.classroom.building if req.classroom else (req.lab.building if req.lab else None),
+                "room_number": req.classroom.room_number if req.classroom else (req.lab.room_number if req.lab else None),
+            } if (req.classroom or req.lab) else None
         } for req in requests]
     })
 
@@ -963,11 +971,20 @@ def create_fault(request):
         user = request.user_obj
         data = json.loads(request.body)
         
+        # Construct location string if not provided but building/room are
+        building = data.get("building", "")
+        room_number = data.get("room_number", "")
+        location = data.get("location", "")
+        if not location and (building or room_number):
+            location = f"{building} {room_number}".strip()
+
         fault = FaultReport.objects.create(
             reported_by=user,
             title=data.get("title", ""),
             description=data.get("description", ""),
-            location=data.get("location", ""),
+            location=location, 
+            building=building,
+            room_number=room_number,
             severity=data.get("severity", "medium"),
             category=data.get("category", "other"),
             status="open",
@@ -1002,17 +1019,22 @@ def list_faults(request):
             "title": fault.title,
             "description": fault.description,
             "location": fault.location,
+            "building": fault.building,
+            "room_number": fault.room_number,
             "severity": fault.severity,
             "category": fault.category,
             "status": fault.status,
             "assigned_to": fault.assigned_to,
             "reported_by": fault.reported_by.email,
+            "reporter_email": fault.reported_by.email,  # For compatibility
             "created_at": fault.created_at.isoformat(),
+            "created_date": fault.created_at.isoformat(),  # For compatibility
+            "updated_at": fault.updated_at.isoformat() if fault.updated_at else None,
         } for fault in faults]
     })
 
 @csrf_exempt
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "PUT"])
 @require_auth
 def update_fault(request, fault_id):
     user = request.user_obj
@@ -1117,8 +1139,8 @@ def admin_stats(request):
 def admin_role_requests(request):
     user = request.user_obj
     prof, _ = Profile.objects.get_or_create(user=user)
-    if prof.role != "admin":
-        return JsonResponse({"message": "Only admins can view role requests"}, status=403)
+    if prof.role not in ["admin", "manager"]:
+        return JsonResponse({"message": "Only admins and managers can view role requests"}, status=403)
     
     # Get all role requests, not just pending
     requests = RoleRequest.objects.all().order_by("-created_at")
@@ -1143,8 +1165,8 @@ def admin_role_requests(request):
 def admin_approve_role(request, request_id):
     user = request.user_obj
     prof, _ = Profile.objects.get_or_create(user=user)
-    if prof.role != "admin":
-        return JsonResponse({"message": "Only admins can approve roles"}, status=403)
+    if prof.role not in ["admin", "manager"]:
+        return JsonResponse({"message": "Only admins and managers can approve roles"}, status=403)
     
     try:
         req = RoleRequest.objects.get(id=request_id, status="pending")
@@ -1192,8 +1214,8 @@ def admin_approve_role(request, request_id):
 def admin_reject_role(request, request_id):
     user = request.user_obj
     prof, _ = Profile.objects.get_or_create(user=user)
-    if prof.role != "admin":
-        return JsonResponse({"message": "Only admins can reject roles"}, status=403)
+    if prof.role not in ["admin", "manager"]:
+        return JsonResponse({"message": "Only admins and managers can reject roles"}, status=403)
     
     try:
         req = RoleRequest.objects.get(id=request_id, status="pending")
@@ -1204,3 +1226,57 @@ def admin_reject_role(request, request_id):
         return JsonResponse({"message": "Request not found"}, status=404)
     except Exception as e:
         return JsonResponse({"message": f"Error: {str(e)}"}, status=500)
+@csrf_exempt
+@require_http_methods(["GET"])
+@require_auth
+def get_recurring_issues(request):
+    """US-11: Recurring Problems report"""
+    user = request.user_obj
+    prof, _ = Profile.objects.get_or_create(user=user)
+    if prof.role not in ["manager", "admin"]:
+        return JsonResponse({"message": "Only managers and admins can view recurring issues"}, status=403)
+    
+    # Identify Recurring Fault Patterns (US-11.1)
+    # Group by building, room_number, and title or category
+    recurring_faults = FaultReport.objects.values(
+        'building', 'room_number', 'category'
+    ).annotate(
+        count=Count('id')
+    ).filter(count__gte=2).order_by('-count')
+    
+    # Identify Recurring Overload Patterns (US-11.2)
+    recurring_overloads = OverloadRecord.objects.values(
+        'building', 'room_number', 'resource_type'
+    ).annotate(
+        count=Count('id')
+    ).filter(count__gte=2).order_by('-count')
+    
+    return JsonResponse({
+        "recurring_faults": list(recurring_faults),
+        "recurring_overloads": list(recurring_overloads),
+    })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@require_auth
+def log_overload(request):
+    """Internal/Manager endpoint to log an overload event"""
+    user = request.user_obj
+    prof, _ = Profile.objects.get_or_create(user=user)
+    if prof.role not in ["manager", "admin"]:
+        return JsonResponse({"message": "Unauthorized"}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        overload = OverloadRecord.objects.create(
+            resource_type=data.get("resource_type", "occupancy"),
+            location=data.get("location", ""),
+            building=data.get("building", ""),
+            room_number=data.get("room_number", ""),
+            description=data.get("description", ""),
+            threshold_value=data.get("threshold_value", 0.0),
+            current_value=data.get("current_value", 0.0),
+        )
+        return JsonResponse({"message": "Overload logged", "id": overload.id})
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=500)

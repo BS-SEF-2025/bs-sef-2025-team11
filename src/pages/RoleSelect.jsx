@@ -30,7 +30,7 @@ export default function RoleSelect() {
   }, [user, authLoading, navigate]);
 
   const token = localStorage.getItem("token");
-  
+
   // Show loading while checking auth - this is important right after registration
   if (authLoading) {
     return (
@@ -42,7 +42,7 @@ export default function RoleSelect() {
       </div>
     );
   }
-  
+
   // If no token at all, show unauthorized
   if (!token) {
     return (
@@ -58,25 +58,25 @@ export default function RoleSelect() {
       </div>
     );
   }
-  
+
   // If we have token but user is not loaded yet, show loading
   // This can happen right after registration when state is still updating
   // Give it more time - don't redirect immediately
   const [waitingForUser, setWaitingForUser] = useState(token && !user);
-  
+
   useEffect(() => {
     if (token && !user) {
       // Wait up to 3 seconds for user to load
       const timer = setTimeout(() => {
         setWaitingForUser(false);
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     } else {
       setWaitingForUser(false);
     }
   }, [token, user]);
-  
+
   if (waitingForUser) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -88,7 +88,7 @@ export default function RoleSelect() {
       </div>
     );
   }
-  
+
   // After waiting, if still no user but we have token, proceed anyway
   // The setRole function will handle getting the user
   if (token && !user) {
@@ -111,7 +111,7 @@ export default function RoleSelect() {
 
     setLoading(true);
     setError('');
-    
+
     // Verify token exists and user is loaded
     const token = localStorage.getItem("token");
     console.log('=== ROLE SELECTION START ===');
@@ -120,7 +120,7 @@ export default function RoleSelect() {
     console.log('Token value (first 50 chars):', token ? token.substring(0, 50) + '...' : 'NONE');
     console.log('User exists:', !!user);
     console.log('User email:', user?.email);
-    
+
     if (!token) {
       const errorMsg = "No authentication token found. Please log in again.";
       console.error('ERROR: No token found');
@@ -130,14 +130,14 @@ export default function RoleSelect() {
       setTimeout(() => navigate('/login'), 2000);
       return;
     }
-    
+
     // If we have a token but no user, that's okay - we can still set role
     // The setRole function will handle getting the user if needed
     if (!user && token) {
       console.warn('⚠️ User not in context but token exists - proceeding with role selection');
       console.warn('⚠️ setRole will fetch user if needed');
     }
-    
+
     if (!user && !token) {
       const errorMsg = "No authentication found. Please log in again.";
       console.error('ERROR: No user and no token');
@@ -147,7 +147,7 @@ export default function RoleSelect() {
       setTimeout(() => navigate('/login'), 2000);
       return;
     }
-    
+
     try {
       console.log('Calling setRole function...');
       console.log('Role:', role);
@@ -155,17 +155,18 @@ export default function RoleSelect() {
       console.log('User exists:', !!user);
       const result = await setRole(role, reason, managerType);
       console.log('Role set result:', result);
-      
+
       if (result?.pending_request) {
         toast.success(result.message || 'Your role request is pending admin approval. You can use the system as a student for now.');
         // Show additional info for manager/lecturer
-        if (role === 'manager' || role === 'lecturer') {
-          toast.info('An admin will review your request. You will be notified once it\'s approved.');
+        // Show additional info for all roles requiring approval
+        if (['manager', 'lecturer', 'student'].includes(role)) {
+          toast.info('A manager or admin will review your request. You will be notified once it\'s approved.');
         }
       } else {
         toast.success(`Role set to ${role}!`);
       }
-      
+
       // Wait a moment for state to update, then navigate
       await new Promise(resolve => setTimeout(resolve, 300));
       navigate('/dashboard');
@@ -177,7 +178,7 @@ export default function RoleSelect() {
       const errorMessage = error.message || 'Failed to set role. Please try again.';
       setError(errorMessage);
       toast.error(errorMessage);
-      
+
       // If session expired, redirect to login after a delay
       if (errorMessage.includes('session has expired') || errorMessage.includes('log in') || errorMessage.includes('Unauthorized') || errorMessage.includes('No authentication token')) {
         console.error('Session expired, redirecting to login...');

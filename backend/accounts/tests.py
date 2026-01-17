@@ -25,17 +25,25 @@ class UserStory2LabTests(TestCase):
             current_occupancy=50,
             is_available=False
         )
+        # Create user and login
+        self.user = User.objects.create_user(username='teststudent@test.com', email='teststudent@test.com', password='password123')
+        Profile.objects.update_or_create(user=self.user, defaults={'role': 'student'})
+        response = self.client.post('/api/auth/login', 
+                                    data=json.dumps({'email': 'teststudent@test.com', 'password': 'password123'}),
+                                    content_type='application/json')
+        self.token = json.loads(response.content).get('token')
+        self.headers = {'HTTP_AUTHORIZATION': f'Bearer {self.token}'}
 
     def test_list_labs_returns_all_labs(self):
         """Test that lab list endpoint returns all labs"""
-        response = self.client.get('/api/labs/list')
+        response = self.client.get('/api/labs/list', **self.headers)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEqual(len(data['labs']), 2)
         
     def test_lab_has_required_fields(self):
         """Test that lab response includes all required fields"""
-        response = self.client.get('/api/labs/list')
+        response = self.client.get('/api/labs/list', **self.headers)
         data = json.loads(response.content)
         lab = data['labs'][0]
         required_fields = ['id', 'name', 'building', 'room_number', 'max_capacity', 'current_occupancy', 'is_available']
@@ -45,7 +53,7 @@ class UserStory2LabTests(TestCase):
     def test_empty_labs_returns_empty_list(self):
         """Test handling when no labs exist"""
         LabStatus.objects.all().delete()
-        response = self.client.get('/api/labs/list')
+        response = self.client.get('/api/labs/list', **self.headers)
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertEqual(len(data['labs']), 0)
@@ -58,11 +66,11 @@ class UserStory5RoomRequestTests(TestCase):
         self.client = Client()
         # Create manager user
         self.manager = User.objects.create_user(username='manager@test.com', email='manager@test.com', password='password123')
-        Profile.objects.filter(user=self.manager).update(role='manager')
+        Profile.objects.update_or_create(user=self.manager, defaults={'role': 'manager'})
         
         # Create lecturer user
         self.lecturer = User.objects.create_user(username='lecturer@test.com', email='lecturer@test.com', password='password123')
-        Profile.objects.filter(user=self.lecturer).update(role='lecturer')
+        Profile.objects.update_or_create(user=self.lecturer, defaults={'role': 'lecturer'})
         
         # Create a classroom
         self.classroom = ClassroomStatus.objects.create(
@@ -117,7 +125,7 @@ class UserStory7FaultReportTests(TestCase):
         self.client = Client()
         # Create manager
         self.manager = User.objects.create_user(username='manager2@test.com', email='manager2@test.com', password='password123')
-        Profile.objects.filter(user=self.manager).update(role='manager')
+        Profile.objects.update_or_create(user=self.manager, defaults={'role': 'manager'})
         
         # Create student
         self.student = User.objects.create_user(username='student@test.com', email='student@test.com', password='password123')

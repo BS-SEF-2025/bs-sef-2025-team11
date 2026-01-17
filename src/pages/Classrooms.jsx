@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/state/AuthContext';
-import { GraduationCap, Users, CheckCircle, XCircle, AlertCircle, Plus, Search, MapPin, Filter, ChevronDown } from 'lucide-react';
+import {
+  GraduationCap, Users, CheckCircle, XCircle, AlertCircle,
+  Plus, Search, MapPin, Filter, ChevronDown, Calendar
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +14,7 @@ const API_BASE = import.meta.env.DEV ? "" : "http://127.0.0.1:8000";
 
 export default function Classrooms() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [classrooms, setClassrooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState({});
@@ -172,7 +177,7 @@ export default function Classrooms() {
   // Filter classrooms
   const filteredClassrooms = classrooms.filter(classroom => {
     // Search filter
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       classroom.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       classroom.building.toLowerCase().includes(searchTerm.toLowerCase()) ||
       classroom.room_number.toLowerCase().includes(searchTerm.toLowerCase());
@@ -380,9 +385,8 @@ export default function Classrooms() {
                       setSelectedBuilding(building);
                       setShowBuildingFilter(false);
                     }}
-                    className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 ${
-                      selectedBuilding === building ? 'bg-blue-50 text-blue-700' : ''
-                    }`}
+                    className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 ${selectedBuilding === building ? 'bg-blue-50 text-blue-700' : ''
+                      }`}
                   >
                     {selectedBuilding === building && <CheckCircle className="w-4 h-4" />}
                     <span>{building}</span>
@@ -417,9 +421,8 @@ export default function Classrooms() {
                       setSelectedStatus(status);
                       setShowStatusFilter(false);
                     }}
-                    className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 ${
-                      selectedStatus === status ? 'bg-blue-50 text-blue-700' : ''
-                    }`}
+                    className={`w-full text-left px-4 py-2 hover:bg-slate-50 flex items-center gap-2 ${selectedStatus === status ? 'bg-blue-50 text-blue-700' : ''
+                      }`}
                   >
                     {selectedStatus === status && <CheckCircle className="w-4 h-4" />}
                     <span>{status}</span>
@@ -490,6 +493,17 @@ export default function Classrooms() {
                   <div className={`w-3 h-3 rounded-full ${classroom.is_available ? 'bg-green-500' : 'bg-red-500'}`}></div>
                 </div>
 
+                {!isManager && (
+                  <Button
+                    variant="outline"
+                    className="w-full mb-4 flex items-center gap-2 border-blue-200 hover:bg-blue-50"
+                    onClick={() => navigate('/room-requests')}
+                  >
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Request this Room
+                  </Button>
+                )}
+
                 <div className="space-y-4">
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -500,9 +514,8 @@ export default function Classrooms() {
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
                       <div
-                        className={`h-3 rounded-full ${
-                          percentage >= 80 ? 'bg-red-500' : percentage >= 50 ? 'bg-yellow-500' : 'bg-green-500'
-                        }`}
+                        className={`h-3 rounded-full ${percentage >= 80 ? 'bg-red-500' : percentage >= 50 ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
                         style={{ width: `${Math.min(percentage, 100)}%` }}
                       ></div>
                     </div>
@@ -510,13 +523,12 @@ export default function Classrooms() {
                       <p className="text-xs font-medium">
                         {getStatusText(classroom.current_occupancy, classroom.max_capacity, classroom.is_available)}
                       </p>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        getOccupancyStatus(classroom.current_occupancy, classroom.max_capacity, classroom.is_available) === 'Available' 
-                          ? 'bg-green-100 text-green-700' 
-                          : getOccupancyStatus(classroom.current_occupancy, classroom.max_capacity, classroom.is_available) === 'Partially Booked'
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${getOccupancyStatus(classroom.current_occupancy, classroom.max_capacity, classroom.is_available) === 'Available'
+                        ? 'bg-green-100 text-green-700'
+                        : getOccupancyStatus(classroom.current_occupancy, classroom.max_capacity, classroom.is_available) === 'Partially Booked'
                           ? 'bg-yellow-100 text-yellow-700'
                           : 'bg-red-100 text-red-700'
-                      }`}>
+                        }`}>
                         {getOccupancyStatus(classroom.current_occupancy, classroom.max_capacity, classroom.is_available)}
                       </span>
                     </div>
@@ -532,7 +544,7 @@ export default function Classrooms() {
                         min="0"
                         max={classroom.max_capacity}
                         value={occupancyInputs[classroom.id] ?? classroom.current_occupancy}
-                        onChange={(e) => setOccupancyInputs({...occupancyInputs, [classroom.id]: parseInt(e.target.value) || 0})}
+                        onChange={(e) => setOccupancyInputs({ ...occupancyInputs, [classroom.id]: parseInt(e.target.value) || 0 })}
                         className="flex-1"
                       />
                       <Button
@@ -548,7 +560,7 @@ export default function Classrooms() {
                         type="checkbox"
                         id={`available-${classroom.id}`}
                         checked={availableInputs[classroom.id] ?? classroom.is_available}
-                        onChange={(e) => setAvailableInputs({...availableInputs, [classroom.id]: e.target.checked})}
+                        onChange={(e) => setAvailableInputs({ ...availableInputs, [classroom.id]: e.target.checked })}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                       <label htmlFor={`available-${classroom.id}`} className="text-sm text-slate-700">

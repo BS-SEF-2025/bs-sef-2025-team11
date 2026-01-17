@@ -1,7 +1,11 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/state/AuthContext';
-import { LogOut, LayoutDashboard, BookOpen, FlaskConical, AlertTriangle, Users, Settings, Calendar, CheckCircle } from 'lucide-react';
+import {
+  LogOut, LayoutDashboard, BookOpen, FlaskConical,
+  AlertTriangle, Users, Settings, Calendar,
+  CheckCircle, TrendingUp
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function Layout() {
@@ -28,7 +32,7 @@ export default function Layout() {
     );
   }
 
-  if (user?.role === 'lecturer') {
+  if (user?.role === 'student' || user?.role === 'lecturer') {
     navItems.push(
       { path: '/room-requests', label: 'Room Requests', icon: Calendar }
     );
@@ -39,7 +43,8 @@ export default function Layout() {
       { path: '/manager-requests', label: 'Pending Updates', icon: Settings },
       { path: '/request-approvals', label: 'Room Approvals', icon: CheckCircle },
       { path: '/fault-management', label: 'Fault Management', icon: AlertTriangle },
-      { path: '/reports', label: 'All Reports', icon: AlertTriangle }
+      { path: '/reports', label: 'All Reports', icon: AlertTriangle },
+      { path: '/recurring-issues', label: 'Recurring', icon: TrendingUp }
     );
   }
 
@@ -65,11 +70,10 @@ export default function Layout() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                      isActive
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition ${isActive
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className="w-4 h-4" />
