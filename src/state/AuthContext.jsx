@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
-// Use environment variable for deployed backend, or empty string to use Vite proxy in dev
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "" : "http://127.0.0.1:8000");
+// In development, use Vite proxy (empty string). In production, use VITE_API_URL
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -13,17 +13,17 @@ export function AuthProvider({ children }) {
   // This effect only runs on mount to load initial user state
   useEffect(() => {
     console.log('🔑 AuthProvider: Initial mount - checking for existing session...');
-    
+
     const token = localStorage.getItem("token");
     console.log('🔑 Token in localStorage:', !!token);
-    
+
     if (!token) {
       console.log('🔑 No token found, user is not logged in');
       setLoading(false);
       setUser(null);
       return;
     }
-    
+
     // If we have a token, try to load user
     // But only if we don't already have a user (to prevent re-verification)
     if (!user) {
@@ -78,22 +78,22 @@ export function AuthProvider({ children }) {
       console.log('Fetching user from:', url);
       console.log('Token exists:', !!token);
       console.log('Skip on error:', skipOnError);
-      
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
+
       const response = await fetch(url, {
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       console.log('User fetch response status:', response.status);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('Loaded user from token:', data.user);
@@ -142,11 +142,11 @@ export function AuthProvider({ children }) {
       console.log('API_BASE:', API_BASE || '(using proxy)');
       const url = API_BASE ? `${API_BASE}/api/auth/login` : '/api/auth/login';
       console.log('Request URL:', url);
-      
+
       const response = await fetch(url, {
         method: "POST",
         mode: "cors",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
@@ -154,7 +154,7 @@ export function AuthProvider({ children }) {
 
       console.log('Response status:', response.status);
       console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      
+
       const responseText = await response.text();
       console.log('Response text:', responseText);
 
@@ -201,11 +201,11 @@ export function AuthProvider({ children }) {
       console.log('API_BASE:', API_BASE || '(using Vite proxy)');
       const url = API_BASE ? `${API_BASE}/api/auth/register` : '/api/auth/register';
       console.log('Request URL:', url);
-      
+
       const response = await fetch(url, {
         method: "POST",
         mode: "cors",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
@@ -230,21 +230,21 @@ export function AuthProvider({ children }) {
       if (!data.token) {
         throw new Error('No token received from server');
       }
-      
+
       // Ensure token is a clean string
       let tokenToStore = data.token;
       if (typeof tokenToStore !== 'string') {
         tokenToStore = String(tokenToStore);
       }
       tokenToStore = tokenToStore.trim();
-      
+
       // Store token first
       localStorage.setItem("token", tokenToStore);
       console.log('✅ Token stored after registration');
       console.log('Token type:', typeof tokenToStore);
       console.log('Token length:', tokenToStore.length);
       console.log('Token value (first 50 chars):', tokenToStore.substring(0, 50) + '...');
-      
+
       // Verify it was stored correctly
       const verifyStored = localStorage.getItem("token");
       if (verifyStored !== tokenToStore) {
@@ -254,7 +254,7 @@ export function AuthProvider({ children }) {
         throw new Error('Token storage failed');
       }
       console.log('✅ Token storage verified');
-      
+
       // Verify token was stored immediately
       const storedToken = localStorage.getItem("token");
       if (!storedToken) {
@@ -268,12 +268,12 @@ export function AuthProvider({ children }) {
         throw new Error('Token storage verification failed');
       }
       console.log('Token storage verified successfully');
-      
+
       // CRITICAL: Set justRegistered flag FIRST, before setting user
       // This prevents useEffect from trying to verify token
       setJustRegistered(true);
       console.log('🔑 Just registered flag set to TRUE (before setting user)');
-      
+
       // Set user state immediately - don't wait
       let userData = data.user;
       if (userData) {
@@ -290,12 +290,12 @@ export function AuthProvider({ children }) {
           try {
             const url = API_BASE ? `${API_BASE}/api/auth/me` : '/api/auth/me';
             const verifyResponse = await fetch(url, {
-              headers: { 
+              headers: {
                 'Authorization': `Bearer ${verifyToken}`,
                 'Content-Type': 'application/json',
               },
             });
-            
+
             if (verifyResponse.ok) {
               const verifyData = await verifyResponse.json();
               userData = verifyData.user;
@@ -326,18 +326,18 @@ export function AuthProvider({ children }) {
           throw new Error('Token was lost during registration');
         }
       }
-      
+
       // Final verification
       const finalToken = localStorage.getItem("token");
       console.log('Final check - Token exists:', !!finalToken);
       console.log('Final check - User exists:', !!userData);
       console.log('Final check - User email:', userData?.email || 'none');
-      
+
       // Ensure userData is in the return value
       if (!userData) {
         throw new Error('User data was not set during registration');
       }
-      
+
       console.log('✅ Registration successful, user:', userData.email);
       return { ...data, user: userData };
     } catch (e) {
@@ -360,20 +360,20 @@ export function AuthProvider({ children }) {
       if (!token) {
         throw new Error("No authentication token found. Please log in again.");
       }
-      
+
       // Clean the token
       token = token.trim();
-      
+
       console.log('🔑 setRole - role:', role);
       console.log('🔑 setRole - token exists:', !!token);
       console.log('🔑 setRole - token length:', token.length);
-      
+
       const url = API_BASE ? `${API_BASE}/api/auth/set-role` : '/api/auth/set-role';
       const requestBody = JSON.stringify({ role, reason, manager_type: managerType });
-      
+
       console.log('🔑 Calling:', url);
       console.log('🔑 Body:', requestBody);
-      
+
       const response = await fetch(url, {
         method: "POST",
         mode: "cors",
@@ -395,16 +395,16 @@ export function AuthProvider({ children }) {
         } catch {
           error = { message: responseText || `Failed to set role (status ${response.status})` };
         }
-        
+
         console.error('❌ Error:', error.message);
         console.error('❌ Status:', response.status);
-        
+
         if (response.status === 401) {
           // If we just registered, retry once after a delay
           if (justRegistered) {
             console.warn('⚠️ 401 after registration - retrying...');
             await new Promise(resolve => setTimeout(resolve, 1500));
-            
+
             const retryResponse = await fetch(url, {
               method: "POST",
               mode: "cors",
@@ -414,14 +414,14 @@ export function AuthProvider({ children }) {
               },
               body: requestBody,
             });
-            
+
             const retryText = await retryResponse.text();
             if (retryResponse.ok) {
               const retryData = JSON.parse(retryText);
               if (retryData.user) setUser(retryData.user);
               return retryData;
             }
-            
+
             // Retry failed - show backend error
             let retryError;
             try {
@@ -448,9 +448,9 @@ export function AuthProvider({ children }) {
       } catch {
         throw new Error("Invalid response from server");
       }
-      
+
       console.log('Role set response:', data);
-      
+
       // Update user context with new role - this ensures it persists
       if (data.user) {
         setUser(data.user);

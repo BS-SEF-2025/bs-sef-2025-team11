@@ -27,15 +27,15 @@ A comprehensive campus management system for tracking library, lab, and classroo
 - Node.js 16+
 - npm or yarn
 
-### Installation
+### One-Click Start (Recommended)
+1. Double-click the `start_app.bat` file in the main folder.
+2. It will open two server windows (do not close them!).
+3. It will automatically open your browser to the correct page.
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd project_ysodot123
-   ```
+### Manual Start
+If you prefer to run commands manually:
 
-2. **Setup Backend**
+1. **Setup Backend**
    ```bash
    cd backend
    python -m venv venv
@@ -49,13 +49,13 @@ A comprehensive campus management system for tracking library, lab, and classroo
    python manage.py runserver
    ```
 
-3. **Setup Frontend** (in a new terminal)
+2. **Setup Frontend** (in a new terminal)
    ```bash
    npm install
    npm run dev
    ```
 
-4. **Access the application**
+3. **Access the application**
    - Frontend: http://localhost:5173
    - Backend API: http://127.0.0.1:8000
 
