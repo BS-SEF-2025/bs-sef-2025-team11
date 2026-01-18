@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/state/AuthContext';
 import { Calendar, Clock, Users, BookOpen, FlaskConical, Plus, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import ScheduleCalendar from '@/components/ScheduleCalendar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,7 +131,7 @@ export default function RoomRequests() {
     }
   };
 
-  const availableRooms = newRequest.room_type === 'classroom' 
+  const availableRooms = newRequest.room_type === 'classroom'
     ? classrooms.filter(c => c.is_available && c.max_capacity >= newRequest.expected_attendees)
     : labs.filter(l => l.is_available && l.max_capacity >= newRequest.expected_attendees);
 
@@ -144,6 +145,22 @@ export default function RoomRequests() {
       </div>
     );
   }
+
+  const handleTimeSlotClick = (date, hour) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const startTimeStr = `${hour.toString().padStart(2, '0')}:00`;
+    const endTimeStr = `${(hour + 1).toString().padStart(2, '0')}:00`;
+
+    setNewRequest(prev => ({
+      ...prev,
+      requested_date: dateStr,
+      start_time: startTimeStr,
+      end_time: endTimeStr
+    }));
+    setShowForm(true);
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -299,6 +316,17 @@ export default function RoomRequests() {
             </div>
           </form>
         </Card>
+      )}
+
+      {/* Interactive Calendar */}
+      {!showForm && (
+        <div className="mb-8">
+          <ScheduleCalendar
+            requests={requests}
+            loading={loading}
+            onTimeSlotClick={handleTimeSlotClick}
+          />
+        </div>
       )}
 
       {/* My Requests List */}

@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/state/AuthContext';
-import { AlertTriangle, Zap, MapPin, Building, TrendingUp, Filter, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Zap, MapPin, Building, TrendingUp, Filter, RefreshCw, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import {
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+    PieChart, Pie, Cell
+} from 'recharts';
 
 const API_BASE = import.meta.env.DEV ? "" : "http://127.0.0.1:8000";
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export default function RecurringIssues() {
     const { user } = useAuth();
@@ -41,6 +46,25 @@ export default function RecurringIssues() {
         }
     };
 
+    // Process data for charts
+    const getFaultsByBuilding = () => {
+        const counts = {};
+        data.recurring_faults.forEach(item => {
+            const building = item.building || 'Unknown';
+            counts[building] = (counts[building] || 0) + item.count;
+        });
+        return Object.keys(counts).map(key => ({ name: key, value: counts[key] }));
+    };
+
+    const getFaultsByCategory = () => {
+        const counts = {};
+        data.recurring_faults.forEach(item => {
+            const cat = item.category || 'Other';
+            counts[cat] = (counts[cat] || 0) + item.count;
+        });
+        return Object.keys(counts).map(key => ({ name: key, value: counts[key] }));
+    };
+
     if (loading) {
         return (
             <div className="p-6">
@@ -52,12 +76,79 @@ export default function RecurringIssues() {
         );
     }
 
+    const buildingData = getFaultsByBuilding();
+    const categoryData = getFaultsByCategory();
+
     return (
         <div className="p-6 max-w-7xl mx-auto space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-2">Recurring Issues Report</h1>
-                <p className="text-slate-600">Identify systemic problems and plan infrastructure improvements (US-11)</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Recurring Issues Analytics</h1>
+                    <p className="text-slate-600">Identify systemic problems and plan infrastructure improvements (US-11)</p>
+                </div>
+                <Button
+                    variant="outline"
+                    onClick={fetchRecurringIssues}
+                    disabled={loading}
+                    className="flex items-center gap-2"
+                >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh Data
+                </Button>
             </div>
+
+            {/* Analytics Section */}
+            {(buildingData.length > 0 || categoryData.length > 0) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="p-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-blue-500" />
+                            Faults by Building
+                        </h3>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={buildingData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip
+                                        contentStyle={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                                    />
+                                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Fault Reports" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+
+                    <Card className="p-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+                            <PieChartIcon className="w-5 h-5 text-purple-500" />
+                            Problem Distribution
+                        </h3>
+                        <div className="h-[300px] w-full flex justify-center">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={categoryData}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={false}
+                                        outerRadius={100}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                    >
+                                        {categoryData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Recurring Faults Section */}
@@ -151,18 +242,6 @@ export default function RecurringIssues() {
                         </div>
                     )}
                 </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
-                <Button
-                    variant="outline"
-                    onClick={fetchRecurringIssues}
-                    disabled={loading}
-                    className="flex items-center gap-2"
-                >
-                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                    Refresh Report
-                </Button>
             </div>
         </div>
     );

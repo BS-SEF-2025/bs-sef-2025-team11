@@ -53,6 +53,11 @@ urlpatterns = [
     path("reports/recurring", views.get_recurring_issues, name="recurring_issues"),
     path("reports/log-overload", views.log_overload, name="log_overload"),
     
+    # Notifications
+    path("notifications/list", views.list_notifications, name="list_notifications"),
+    path("notifications/<int:notification_id>/read", views.mark_notification_read, name="mark_notification_read"),
+    path("notifications/read-all", views.mark_all_notifications_read, name="mark_all_notifications_read"),
+    
     # Test endpoints
     path("test", views.test_endpoint, name="test"),
     path("test-auth", views.test_auth, name="test_auth"),

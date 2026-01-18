@@ -9,7 +9,7 @@ from django.db.models import Count, Q
 from .models import (
     Profile, RoleRequest, LibraryStatus, LabStatus, ClassroomStatus,
     LibraryUpdateRequest, LabUpdateRequest, RoomRequest, FaultReport,
-    OverloadRecord
+    OverloadRecord, Notification
 )
 from .jwt import encode_token, decode_token
 from .auth import get_user_from_request, require_auth
@@ -265,6 +265,15 @@ def set_role(request):
                 reason=reason,
                 status="pending"
             )
+            # Notify managers and admins
+            managers = User.objects.filter(profile__role__in=["manager", "admin"])
+            for m in managers:
+                Notification.objects.create(
+                    user=m,
+                    title="New Role Request",
+                    message=f"{user.email} requested to be a {role}.",
+                    action_link="/manager-requests"
+                )
             return JsonResponse({
                 "user": _user_to_dict(user),
                 "message": f"Role request for {role} submitted for approval.",
@@ -289,6 +298,15 @@ def set_role(request):
                     reason=reason or "Admin role request",
                     status="pending"
                 )
+                # Notify managers and admins
+                managers = User.objects.filter(profile__role__in=["manager", "admin"])
+                for m in managers:
+                    Notification.objects.create(
+                        user=m,
+                        title="New Admin Request",
+                        message=f"{user.email} requested admin access.",
+                        action_link="/manager-requests"
+                    )
                 return JsonResponse({
                     "user": _user_to_dict(user),
                     "message": "Admin role request submitted for approval. You can use the system as a student for now.",
@@ -853,6 +871,16 @@ def create_room_request(request):
             end_time=end_time,
         )
         
+        # Notify managers and admins
+        managers = User.objects.filter(profile__role__in=["manager", "admin"])
+        for m in managers:
+            Notification.objects.create(
+                user=m,
+                title="New Room Request",
+                message=f"{user.email} requested a {room_type} for {requested_date}.",
+                action_link="/request-approvals"
+            )
+            
         return JsonResponse({
             "request": {
                 "id": room_req.id,
@@ -934,6 +962,14 @@ def approve_room_request(request, request_id):
         req.approved_at = datetime.now()
         req.save()
         
+        # Create notification
+        Notification.objects.create(
+            user=req.requested_by,
+            title="Room Request Approved",
+            message=f"Your request for {req.room_type} on {req.requested_date} has been approved.",
+            action_link="/room-requests"
+        )
+        
         return JsonResponse({"message": "Room request approved"})
     except RoomRequest.DoesNotExist:
         return JsonResponse({"message": "Request not found"}, status=404)
@@ -956,6 +992,15 @@ def reject_room_request(request, request_id):
         req.approved_by = user
         req.rejection_reason = data.get("rejection_reason", "")
         req.save()
+        
+        # Create notification
+        Notification.objects.create(
+            user=req.requested_by,
+            title="Room Request Rejected",
+            message=f"Your request for {req.room_type} on {req.requested_date} was rejected: {req.rejection_reason}",
+            action_link="/room-requests"
+        )
+        
         return JsonResponse({"message": "Room request rejected"})
     except RoomRequest.DoesNotExist:
         return JsonResponse({"message": "Request not found"}, status=404)
@@ -990,6 +1035,16 @@ def create_fault(request):
             status="open",
         )
         
+        # Notify managers and admins
+        managers = User.objects.filter(profile__role__in=["manager", "admin"])
+        for m in managers:
+            Notification.objects.create(
+                user=m,
+                title="New Fault Reported",
+                message=f"{fault.title} in {fault.building} {fault.room_number}",
+                action_link="/fault-management"
+            )
+
         return JsonResponse({
             "fault": {
                 "id": fault.id,
@@ -1056,6 +1111,14 @@ def update_fault(request, fault_id):
             fault.category = data["category"]
         
         fault.save()
+        
+        # Notify the reporter
+        Notification.objects.create(
+            user=fault.reported_by,
+            title="Fault Report Update",
+            message=f"The status of your report '{fault.title}' has been updated to {fault.status}.",
+            action_link="/reports"
+        )
         
         return JsonResponse({
             "fault": {
@@ -1189,12 +1252,27 @@ def admin_approve_role(request, request_id):
             req.approved_by = user
             req.approved_at = datetime.now()
         except:
-            pass  # Field might not exist in older migrations
+            pass
         req.save()
         
-        print(f"DEBUG: Role approved - User {req.user.email} is now {req.requested_role}")
+        # Create notification
+        try:
+            Notification.objects.create(
+                user=req.user,
+                title="Role Request Approved",
+                message=f"Your request for the {req.requested_role} role has been approved.",
+                action_link="/dashboard"
+            )
+        except Exception as e:
+            print(f"Error creating notification: {e}")
+
+        req.save()
+        
+        req.save()
+        
         if user_prof.manager_type:
-            print(f"DEBUG: Manager type: {user_prof.manager_type}")
+             pass # Removed debug print
+
         
         return JsonResponse({
             "message": "Role approved",
@@ -1221,6 +1299,14 @@ def admin_reject_role(request, request_id):
         req = RoleRequest.objects.get(id=request_id, status="pending")
         req.status = "rejected"
         req.save()
+        
+        # Create notification
+        Notification.objects.create(
+            user=req.user,
+            title="Role Request Rejected",
+            message=f"Your request for the {req.requested_role} role was rejected. Please contact an administrator.",
+            action_link="/role-select"
+        )
         return JsonResponse({"message": "Role rejected"})
     except RoleRequest.DoesNotExist:
         return JsonResponse({"message": "Request not found"}, status=404)
@@ -1280,3 +1366,46 @@ def log_overload(request):
         return JsonResponse({"message": "Overload logged", "id": overload.id})
     except Exception as e:
         return JsonResponse({"message": str(e)}, status=500)
+
+# Notification endpoints
+@csrf_exempt
+@require_http_methods(["GET"])
+@require_auth
+def list_notifications(request):
+    user = request.user_obj
+    
+    # Get unread notifications first, then read ones, limited to 50 recent
+    notifications = Notification.objects.filter(user=user).order_by("is_read", "-created_at")[:50]
+    
+    return JsonResponse({
+        "notifications": [{
+            "id": n.id,
+            "title": n.title,
+            "message": n.message,
+            "is_read": n.is_read,
+            "action_link": n.action_link,
+            "created_at": n.created_at.isoformat(),
+        } for n in notifications],
+        "unread_count": Notification.objects.filter(user=user, is_read=False).count()
+    })
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@require_auth
+def mark_notification_read(request, notification_id):
+    user = request.user_obj
+    try:
+        notification = Notification.objects.get(id=notification_id, user=user)
+        notification.is_read = True
+        notification.save()
+        return JsonResponse({"message": "Notification marked as read"})
+    except Notification.DoesNotExist:
+        return JsonResponse({"message": "Notification not found"}, status=404)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@require_auth
+def mark_all_notifications_read(request):
+    user = request.user_obj
+    Notification.objects.filter(user=user, is_read=False).update(is_read=True)
+    return JsonResponse({"message": "All notifications marked as read"})

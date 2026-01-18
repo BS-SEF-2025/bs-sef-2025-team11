@@ -7,6 +7,7 @@ import {
   CheckCircle, TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Notifications from '@/components/Notifications';
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -84,6 +85,7 @@ export default function Layout() {
               })}
             </nav>
             <div className="flex items-center gap-4">
+              <Notifications />
               <span className="text-sm text-slate-600 hidden sm:inline">
                 {user?.email}
               </span>
